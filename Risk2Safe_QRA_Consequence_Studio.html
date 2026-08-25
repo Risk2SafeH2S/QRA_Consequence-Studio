@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Risk2Safe · QRA Consequence Studio</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c232d; --line:#2d3542; --line2:#3a4452;
+  --txt:#e6edf3; --mut:#9aa7b4; --dim:#6b7684;
+  --acc:#ff7a45; --acc2:#ffa06b; --blue:#4c9aff; --grn:#3fb950; --yel:#e3b341; --red:#f85149; --pur:#a371f7;
+  --z1:#f85149; --z2:#ff7a45; --z3:#e3b341; --z4:#3fb950;
+  --shadow:0 6px 24px rgba(0,0,0,.35);
+  --mono:'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;line-height:1.5}
+a{color:var(--blue);text-decoration:none}
+h1,h2,h3,h4{margin:0 0 .4em;font-weight:600;line-height:1.25}
+h2{font-size:1.15rem} h3{font-size:1rem;color:var(--acc2)} h4{font-size:.85rem;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+p{margin:.3em 0}
+small{color:var(--mut)}
+code,.mono{font-family:var(--mono)}
+button{font-family:var(--sans);cursor:pointer}
+input,select,textarea{font-family:var(--sans);background:var(--panel2);color:var(--txt);border:1px solid var(--line2);border-radius:6px;padding:6px 8px;font-size:13px;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc)}
+select{cursor:pointer}
+label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px;font-weight:500}
+.hidden{display:none!important}
+
+/* layout */
+header.topbar{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#12171f,#0d1117);border-bottom:1px solid var(--line);padding:0 18px;display:flex;align-items:center;gap:16px;height:56px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;white-space:nowrap}
+.brand .dot{width:11px;height:11px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}
+.brand small{font-weight:500;color:var(--dim);font-size:11px}
+nav.tabs{display:flex;gap:2px;flex:1;overflow-x:auto}
+nav.tabs button{background:transparent;border:none;color:var(--mut);padding:8px 14px;border-radius:7px;font-size:13.5px;font-weight:500;white-space:nowrap}
+nav.tabs button:hover{color:var(--txt);background:var(--panel)}
+nav.tabs button.active{color:var(--acc);background:var(--panel);box-shadow:inset 0 -2px 0 var(--acc)}
+.topbar .util{display:flex;gap:8px;align-items:center}
+.btn{background:var(--panel2);color:var(--txt);border:1px solid var(--line2);border-radius:7px;padding:7px 13px;font-size:13px;font-weight:500;transition:.12s}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.btn.primary{background:var(--acc);color:#1a1206;border-color:var(--acc);font-weight:600}
+.btn.primary:hover{background:var(--acc2);color:#1a1206}
+.btn.ghost{background:transparent}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+
+main{max-width:1400px;margin:0 auto;padding:18px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr} .g3{grid-template-columns:1fr 1fr 1fr} .g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card.pad0{padding:0;overflow:hidden}
+.card h3{margin-top:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.row>div{flex:1;min-width:120px}
+.field{margin-bottom:10px}
+.inline{display:flex;gap:8px;align-items:center}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:var(--panel2);border:1px solid var(--line2);color:var(--mut)}
+.tag.grn{color:var(--grn);border-color:var(--grn)} .tag.red{color:var(--red);border-color:var(--red)}
+.tag.yel{color:var(--yel);border-color:var(--yel)} .tag.blue{color:var(--blue);border-color:var(--blue)}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+tbody tr:hover{background:var(--panel2)}
+td.num,th.num{text-align:right;font-family:var(--mono)}
+
+/* stat tiles */
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat .v{font-size:1.5rem;font-weight:700;font-family:var(--mono);line-height:1.1}
+.stat .l{font-size:11.5px;color:var(--mut);margin-top:3px}
+.stat .u{font-size:.8rem;color:var(--dim);font-weight:400}
+
+/* zone legend */
+.zones{display:flex;flex-direction:column;gap:6px}
+.zone-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--panel2);border-radius:8px;border-left:4px solid var(--line2)}
+.zone-item .sw{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+.zone-item .lbl{flex:1;font-size:12.5px}
+.zone-item .dist{font-family:var(--mono);font-weight:600}
+
+canvas{max-width:100%;display:block;background:var(--panel2);border-radius:10px}
+.plotwrap{position:relative}
+.banner{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;border:1px solid}
+.banner.info{background:rgba(76,154,255,.08);border-color:rgba(76,154,255,.3);color:#a9cbff}
+.banner.warn{background:rgba(227,179,65,.08);border-color:rgba(227,179,65,.3);color:#f0d78a}
+.banner.ok{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.3);color:#8fdfa0}
+.help{font-size:11.5px;color:var(--dim);margin-top:2px}
+.divider{height:1px;background:var(--line);margin:14px 0}
+.pill-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.pill{padding:5px 11px;border-radius:20px;background:var(--panel2);border:1px solid var(--line2);color:var(--mut);font-size:12.5px;cursor:pointer}
+.pill.active{background:var(--acc);color:#1a1206;border-color:var(--acc);font-weight:600}
+details{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:8px 0}
+summary{cursor:pointer;font-weight:600;color:var(--acc2)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px}
+.kv .k{color:var(--mut)} .kv .val{font-family:var(--mono);text-align:right}
+.scroll{overflow-x:auto}
+.muted{color:var(--mut)}
+.warnbox{color:var(--yel)}
+.crit{color:var(--red);font-weight:600}
+.foot{color:var(--dim);font-size:11.5px;text-align:center;padding:24px 0}
+::-webkit-scrollbar{height:9px;width:9px}::-webkit-scrollbar-thumb{background:var(--line2);border-radius:9px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line2);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+.aiout{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:14px;white-space:pre-wrap;font-size:13px;line-height:1.6;max-height:520px;overflow:auto}
+.badge-crit{background:var(--z1)} .badge-h{background:var(--z2)} .badge-m{background:var(--z3)} .badge-l{background:var(--z4)}
+.cite{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--panel2);border:1px solid var(--blue);color:var(--blue);font-size:10px;font-style:normal;cursor:help;margin-left:5px;vertical-align:middle;font-weight:700}
+.cite:hover{background:var(--blue);color:#0d1117}
+/* wizard stepper */
+.stepper{display:flex;gap:0;margin-bottom:20px;counter-reset:step}
+.step{flex:1;text-align:center;position:relative;padding:8px 4px;color:var(--dim);font-size:12.5px;font-weight:600}
+.step::before{counter-increment:step;content:counter(step);display:block;width:30px;height:30px;line-height:28px;border-radius:50%;background:var(--panel2);border:2px solid var(--line2);margin:0 auto 6px;font-size:13px}
+.step::after{content:'';position:absolute;top:23px;left:-50%;width:100%;height:2px;background:var(--line2);z-index:-1}
+.step:first-child::after{display:none}
+.step.active{color:var(--acc)}
+.step.active::before{border-color:var(--acc);background:var(--acc);color:#1a1206}
+.step.done{color:var(--grn)}
+.step.done::before{border-color:var(--grn);background:var(--grn);color:#0d1117;content:'✓'}
+.step.done::after{background:var(--grn)}
+.wizbtns{display:flex;justify-content:space-between;margin-top:18px}
+.preset-card{background:var(--panel2);border:1px solid var(--line2);border-radius:9px;padding:11px 13px;cursor:pointer;transition:.12s}
+.preset-card:hover{border-color:var(--acc)}
+.preset-card.sel{border-color:var(--acc);background:rgba(255,122,69,.08)}
+.preset-card .t{font-weight:600;font-size:13px}
+.preset-card .d{font-size:11.5px;color:var(--mut);margin-top:2px}
+.cmp-add{border:1px dashed var(--line2);border-radius:9px;padding:10px;text-align:center;color:var(--mut);cursor:pointer}
+.cmp-add:hover{border-color:var(--acc);color:var(--acc)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="dot"></span> QRA Consequence Studio <small>Risk2Safe</small></div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="scenario" class="active">Scenario</button>
+    <button data-tab="results">Results</button>
+    <button data-tab="compare">Compare</button>
+    <button data-tab="calc">Calculators</button>
+    <button data-tab="chem">Chemicals</button>
+    <button data-tab="ai">AI Review</button>
+    <button data-tab="methods">Methods &amp; Refs</button>
+  </nav>
+  <div class="util">
+    <button class="btn sm ghost" id="btnNew">New</button>
+    <button class="btn sm ghost" id="btnExport">Export</button>
+    <button class="btn sm ghost" id="btnImport">Import</button>
+    <button class="btn sm ghost" id="btnPrint">Report</button>
+  </div>
+</header>
+<main id="app"></main>
+<div class="foot">
+  Risk2Safe QRA Consequence Studio · screening-level estimator for training, study scoping &amp; software cross-checking ·
+  not a substitute for a validated safety-case package · methods per CCPS / Crowl &amp; Louvar / Lees / TNO
+</div>
+<script>
+/* ============================================================================
+   Risk2Safe QRA — Consequence Modelling Engine
+   Pure-function physics core. Runs in Node (module.exports) and the browser
+   (window.QRA). No dependencies.
+
+   Method basis — grounded in the TNO "Coloured Books" (Dutch CPR series) with
+   Crowl & Louvar / CCPS cross-checks. Each result carries a CITE tag (see CITES).
+   - Source terms & flash:       TNO Yellow Book (CPR 14E) Ch.2 (Eq 2.169 flash, Cd 2.197);
+                                 Crowl & Louvar Ch.4 discharge equations.
+   - Neutral dispersion:         Pasquill-Gifford Gaussian (Briggs sigmas).
+   - Dense gas:                  Britter & McQuaid workbook (1988), LBNL-digitised Table 1.
+   - Pool fire:                  TNO Yellow Book Ch.6 — Burgess burn rate (Table 6.5),
+                                 flame length Eq 6.12, Mudan SEP Eq 6.19, Bagster transmissivity Eq 6.29.
+   - Jet fire:                   radiant-fraction point source (Yellow Book Fs Eq 6.59).
+   - BLEVE:                      TNO Yellow Book Eq 6.90/6.91 (rfb=3.24 m^0.325, t=0.852 m^0.26).
+   - VCE:                        TNO Multi-Energy (Alonso et al. 2006 fits) + Purple Book (CPR 18E)
+                                 simplified ME (class 10, f_obstr, Eq 4.5/4.6) + TNT cross-check.
+   - Vulnerability:              Green Book (CPR 16E) probits (mg/m3, min) + Purple Book (CPR 18E)
+                                 Table 5.2 probits & lethality bands.
+
+   IMPORTANT: screening/estimation engine for training, study scoping and software
+   cross-checking. Not a substitute for a validated package on a real safety case.
+   ============================================================================ */
+(function (root) {
+  'use strict';
+
+  // ---- physical constants -------------------------------------------------
+  const G = 9.81;            // m/s^2
+  const R_GAS = 8.314;       // J/mol/K
+  const P_ATM = 101325;      // Pa
+  const SIGMA_SB = 5.670e-8; // Stefan-Boltzmann W/m2/K4
+
+  const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+  const log10 = (x) => Math.log(x) / Math.LN10;
+
+  // ---- citation registry (shown as inline tooltips in the UI) --------------
+  const CITES = {
+    gasDischarge:  { m:'Choked / subsonic orifice flow', src:'Yellow Book Eq 2.215; Crowl & Louvar Eq 4-50/51' },
+    liquidDischarge:{ m:'Bernoulli orifice + head, Cd 0.62', src:'Yellow Book §2.5.4.2 Eq 2.194/2.197; Purple Book note 2-4 p.4.3' },
+    flash:         { m:'Adiabatic flash fraction', src:'Yellow Book Eq 2.169; rain-out (2× rule) Eq 2.173' },
+    poolEvap:      { m:'Pool evaporation (boiling / mass-transfer)', src:'Yellow Book §3; Mackay-Matsugu' },
+    gaussian:      { m:'Gaussian plume, Pasquill-Gifford', src:'Briggs sigmas; Crowl & Louvar Eq 5-45' },
+    britterMcQuaid:{ m:'Dense-gas dispersion', src:'Britter & McQuaid workbook 1988, Table 1 (LBNL digitisation)' },
+    poolFire:      { m:'Pool fire: Burgess burn rate, flame length, Mudan SEP', src:'Yellow Book Eq 6.66/6.12/6.19, Table 6.5' },
+    transmissivity:{ m:'Atmospheric transmissivity', src:'Yellow Book Eq 6.29 (Bagster 1989)' },
+    jetFire:       { m:'Jet fire radiant-fraction point source', src:'Yellow Book Fs Eq 6.59; API 521' },
+    bleve:         { m:'BLEVE fireball', src:'Yellow Book Eq 6.90/6.91/6.95 (TNO 1983)' },
+    tno:           { m:'Vapour cloud explosion — Multi-Energy', src:'Yellow Book Ch.5; Alonso et al. 2006 curve fits' },
+    purpleVCE:     { m:'Simplified Multi-Energy (mandated QRA form)', src:'Purple Book §4.8 Eq 4.5/4.6 (class 10, f_obstr 0.08)' },
+    tnt:           { m:'TNT equivalency cross-check', src:'Kinney & Graham; CPQRA' },
+    probitTox:     { m:'Toxic lethality probit', src:'Green Book Table 5.3 / Purple Book Table 5.2 (C mg/m³, t min)' },
+    probitTherm:   { m:'Thermal-dose lethality probit', src:'Green Book Eq 3.5 / Purple Book Eq 5.4 (Pr=−36.38+2.56·ln(t·q^4/3))' },
+    probitOver:    { m:'Overpressure lethality', src:'Purple Book Fig 5.5 bands; Green Book eardrum Eq 12' }
+  };
+
+  // error function (Abramowitz & Stegun 7.1.26)
+  function erf(x) {
+    const s = x < 0 ? -1 : 1; x = Math.abs(x);
+    const t = 1 / (1 + 0.3275911 * x);
+    const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return s * y;
+  }
+  // standard normal CDF
+  function normCdf(z) { return 0.5 * (1 + erf(z / Math.SQRT2)); }
+  // probit -> fraction affected (probit uses the 5-offset convention)
+  function probitToFraction(Y) { return normCdf(Y - 5); }
+
+  /* =========================================================================
+     1. SOURCE TERMS  (discharge, flash, pool)
+     ========================================================================= */
+
+  // Gas discharge through a hole (choked / sonic and subsonic).
+  // Crowl & Louvar Eq. 4-50/4-51. Returns mass flow kg/s.
+  function gasDischarge(o) {
+    // o: {P1 (Pa abs), T1 (K), MW (kg/kmol), gamma, Cd, area (m2), Pa (Pa abs)}
+    const { P1, T1, MW, gamma, Cd = 0.85, area, Pa = P_ATM } = o;
+    const Mw = MW / 1000; // kg/mol
+    const gp = gamma;
+    const critRatio = Math.pow(2 / (gp + 1), gp / (gp - 1)); // Pa/P1 at choke
+    const choked = (Pa / P1) <= critRatio;
+    let Gflux; // mass flux term
+    if (choked) {
+      Gflux = Cd * area * P1 * Math.sqrt(gp * Mw / (R_GAS * T1) * Math.pow(2 / (gp + 1), (gp + 1) / (gp - 1)));
+    } else {
+      const r = Pa / P1;
+      Gflux = Cd * area * P1 * Math.sqrt(
+        2 * Mw / (R_GAS * T1) * (gp / (gp - 1)) *
+        (Math.pow(r, 2 / gp) - Math.pow(r, (gp + 1) / gp))
+      );
+    }
+    return { mdot: Gflux, choked, critPressureRatio: critRatio };
+  }
+
+  // Liquid discharge through a hole. Bernoulli + hydrostatic head.
+  // Crowl & Louvar Eq. 4-7.  Returns mass flow kg/s.
+  function liquidDischarge(o) {
+    // o: {P1 (Pa abs, in vessel above liquid), rho (kg/m3), Cd, area (m2), head (m liquid), Pa}
+    const { P1, rho, Cd = 0.61, area, head = 0, Pa = P_ATM } = o;
+    const dP = Math.max(0, (P1 - Pa) + rho * G * head);
+    const v = Math.sqrt(2 * dP / rho);
+    return { mdot: Cd * area * rho * v, velocity: v, drivingPressure: dP };
+  }
+
+  // Flash fraction for superheated liquid release + aerosol rain-out.
+  // TNO Yellow Book Eq 2.169 (approximation): Phi = Cp*(T0-Tf)/Lv (with ln refinement),
+  // and Eq 2.173 rain-out rule: if flash < 0.5 airborne = 2*flash, else all airborne.
+  function flashFraction(o) {
+    // o: {Cp (J/kg/K), T_storage (K), Tb (K normal boiling pt), Hvap (J/kg)}
+    const { Cp, T_storage, Tb, Hvap } = o;
+    // Yellow Book Eq 2.169 form: Phi_m,f = (Tf/Lv)*Cp*ln(T0/Tf)  (Phi_m,0=0 for saturated liquid start)
+    const fvYB = clamp((Tb / Hvap) * Cp * Math.log(T_storage / Tb), 0, 1);
+    // simple linear form (Clausius) as cross-check
+    const fvLin = clamp(Cp * (T_storage - Tb) / Hvap, 0, 1);
+    const fvExact = fvYB > 0 ? fvYB : fvLin;
+    // Yellow Book Eq 2.173 rain-out: airborne = 2*flash if flash<0.5, else 1.0
+    const airborneFraction = fvExact < 0.5 ? clamp(2 * fvExact, 0, 1) : 1.0;
+    const rainoutToPool = clamp(1 - airborneFraction, 0, 1);
+    return { flashFraction: fvExact, flashFractionLinear: fvLin, airborneFraction, rainoutToPool, _cite: 'flash' };
+  }
+
+  // Pool evaporation. Boiling pool (heat-transfer limited early) OR
+  // non-boiling (mass-transfer limited, U10 wind). CCPS / Crowl & Louvar Ch.4.
+  function poolEvaporation(o) {
+    // o: {mode:'boiling'|'nonboiling', area (m2), ... }
+    if (o.mode === 'boiling') {
+      // early transient from ground conduction (Crowl & Louvar Eq 4-104-ish approximation)
+      // qdot = alpha_ground*(Tg - Tb)/sqrt(pi*a*t); use quasi-steady ground flux.
+      const { area, Hvap, k = 0.9, alpha = 4.3e-7, Tg = 288, Tb, t = 60 } = o;
+      const q = k * (Tg - Tb) / Math.sqrt(Math.PI * alpha * t); // W/m2 (heat into pool)
+      const rate = Math.abs(q) * area / Hvap; // kg/s
+      return { rate: Math.max(0, rate), regime: 'boiling', groundFlux: q };
+    } else {
+      // non-boiling mass transfer:  Qm = k_m * A * MW * Psat /(R*T)
+      // mass-transfer coeff (Mackay & Matsugu):  km = 0.0048 * u^0.78 * (dpool)^-0.11 * Sc^-0.67
+      const { area, MW, Psat, T = 298, u10 = 2, Sc = 2 } = o;
+      const dpool = 2 * Math.sqrt(area / Math.PI);
+      const km = 0.0048 * Math.pow(u10, 0.78) * Math.pow(Math.max(dpool, 0.1), -0.11) * Math.pow(Sc, -0.67);
+      const rate = km * area * (MW / 1000) * Psat / (R_GAS * T); // kg/s
+      return { rate: Math.max(0, rate), regime: 'nonboiling', kMass: km, poolDiameter: dpool };
+    }
+  }
+
+  /* =========================================================================
+     2. NEUTRAL / BUOYANT DISPERSION  (Pasquill-Gifford Gaussian)
+     ========================================================================= */
+
+  // P-G dispersion coefficients (rural, Briggs interpolation formulas).
+  // stab: 'A'..'F'. x in metres. returns {sy, sz} in metres.
+  function pgSigma(stab, x, terrain) {
+    x = Math.max(1, x);
+    const rural = {
+      A: { sy: [0.22, 0.0001, -0.5], sz: [0.20, 0, 1] },
+      B: { sy: [0.16, 0.0001, -0.5], sz: [0.12, 0, 1] },
+      C: { sy: [0.11, 0.0001, -0.5], sz: [0.08, 0.0002, -0.5] },
+      D: { sy: [0.08, 0.0001, -0.5], sz: [0.06, 0.0015, -0.5] },
+      E: { sy: [0.06, 0.0001, -0.5], sz: [0.03, 0.0003, -1] },
+      F: { sy: [0.04, 0.0001, -0.5], sz: [0.016, 0.0003, -1] }
+    };
+    const urban = {
+      A: { sy: [0.32, 0.0004, -0.5], sz: [0.24, 0.001, 0.5] },
+      B: { sy: [0.32, 0.0004, -0.5], sz: [0.24, 0.001, 0.5] },
+      C: { sy: [0.22, 0.0004, -0.5], sz: [0.20, 0, 1] },
+      D: { sy: [0.16, 0.0004, -0.5], sz: [0.14, 0.0003, -0.5] },
+      E: { sy: [0.11, 0.0004, -0.5], sz: [0.08, 0.00015, -0.5] },
+      F: { sy: [0.11, 0.0004, -0.5], sz: [0.08, 0.00015, -0.5] }
+    };
+    const tbl = terrain === 'urban' ? urban : rural;
+    const s = tbl[stab] || tbl.D;
+    const sy = 0.465 * x * Math.tan(0.017453293 * (s.sy[0] * 180 / Math.PI * 0 + 0)) || 0; // placeholder, override below
+    // Briggs power-law form: sy = a*x/(1+b*x)^p  ; sz = a*x*(1+b*x)^p
+    const syv = s.sy[0] * x * Math.pow(1 + s.sy[1] * x, s.sy[2]);
+    const szv = s.sz[0] * x * Math.pow(1 + s.sz[1] * x, s.sz[2]);
+    return { sy: syv, sz: szv };
+  }
+
+  // Continuous ground-level point source, plume centreline concentration.
+  // Crowl & Louvar Eq. 5-45 (ground release, receptor at ground, centreline).
+  // Returns concentration in kg/m3.
+  function gaussianPlumeConc(o) {
+    // o:{Q (kg/s), u (m/s), x (m), y=0, z=0, H (release height m), stab, terrain}
+    const { Q, u, x, y = 0, z = 0, H = 0, stab = 'D', terrain = 'rural' } = o;
+    if (x <= 0) return 0;
+    const { sy, sz } = pgSigma(stab, x, terrain);
+    const a = Q / (2 * Math.PI * sy * sz * u);
+    const fy = Math.exp(-0.5 * (y * y) / (sy * sy));
+    const fz = Math.exp(-0.5 * Math.pow(z - H, 2) / (sz * sz)) + Math.exp(-0.5 * Math.pow(z + H, 2) / (sz * sz));
+    return a * fy * fz;
+  }
+
+  // Solve downwind distance where centreline ground conc == Ctarget (kg/m3).
+  function gaussianPlumeDistance(o, Ctarget) {
+    // bisection on x in [1, 50000] m
+    let lo = 1, hi = 100000;
+    const f = (x) => gaussianPlumeConc(Object.assign({}, o, { x })) - Ctarget;
+    // concentration is non-monotonic for elevated release; for ground release it's monotonic decreasing far-field.
+    // find a bracket where f(lo)>0
+    if (f(lo) < 0) {
+      // peak may be downwind (elevated); scan for max then search beyond
+      let xpk = 1, cpk = -Infinity;
+      for (let xs = 1; xs <= 2000; xs *= 1.2) { const c = gaussianPlumeConc(Object.assign({}, o, { x: xs })); if (c > cpk) { cpk = c; xpk = xs; } }
+      if (cpk < Ctarget) return null; // never reaches target
+      lo = xpk;
+    }
+    for (let i = 0; i < 200; i++) {
+      const mid = Math.sqrt(lo * hi);
+      const fm = f(mid);
+      if (Math.abs(fm) < Ctarget * 1e-6) return mid;
+      if (fm > 0) lo = mid; else hi = mid;
+    }
+    return Math.sqrt(lo * hi);
+  }
+
+  /* =========================================================================
+     3. DENSE-GAS DISPERSION  (Britter & McQuaid)
+     ========================================================================= */
+
+  // Continuous release Table 1 (LBNL digitisation of B&M workbook).
+  // alpha = 0.2*log10( g0^2 * qo / u^5 );  x/(qo/u)^0.5 = 10^beta(alpha)
+  const BM_CONT = {
+    0.10: [[-0.55, null, 1.75], [-0.14, 0.24, 1.88], [1, -0.50, 1.78]],
+    0.05: [[-0.68, null, 1.92], [-0.29, 0.36, 2.16], [-0.18, 0, 2.06], [1, -0.56, 1.96]],
+    0.02: [[-0.69, null, 2.08], [-0.31, 0.45, 2.39], [-0.16, 0, 2.25], [1, -0.54, 2.16]],
+    0.01: [[-0.70, null, 2.25], [-0.29, 0.49, 2.59], [-0.20, 0, 2.45], [1, -0.52, 2.35]],
+    0.005: [[-0.67, null, 2.40], [-0.28, 0.59, 2.80], [-0.15, 0, 2.63], [1, -0.49, 2.56]],
+    0.002: [[-0.69, null, 2.60], [-0.25, 0.39, 2.87], [-0.13, 0, 2.77], [1, -0.50, 2.71]]
+  };
+  // Instantaneous release Table (B&M workbook), beta = log10( x / V^(1/3) )
+  // alpha = 0.5*log10( g0 * V^(1/3) / u^2 ... )  -> uses alpha_i below.
+  const BM_INST = {
+    0.10: [[-0.44, null, 0.70], [0.43, 0.26, 0.81], [1, 0.26, 0.81]],
+    0.05: [[-0.56, null, 0.77], [0.31, 0.26, 0.89], [1, 0.26, 0.89]],
+    0.02: [[-0.66, null, 0.85], [0.20, 0.26, 0.97], [1, 0.26, 0.97]],
+    0.01: [[-0.71, null, 0.95], [0.16, 0.26, 1.03], [1, 0.26, 1.03]]
+  };
+
+  function bmBeta(table, ratio, alpha) {
+    // pick nearest available ratio key (log-interpolate between two if between)
+    const keys = Object.keys(table).map(Number).sort((a, b) => b - a);
+    // find bracketing keys
+    let below = null, above = null;
+    for (const k of keys) { if (k >= ratio) below = k; }
+    for (let i = keys.length - 1; i >= 0; i--) { if (keys[i] <= ratio) above = keys[i]; }
+    const evalKey = (k) => {
+      const segs = table[k];
+      for (const seg of segs) {
+        const [aMax, slope, inter] = seg;
+        if (alpha <= aMax) return slope === null ? inter : slope * alpha + inter;
+      }
+      const last = segs[segs.length - 1];
+      return last[1] === null ? last[2] : last[1] * alpha + last[2];
+    };
+    if (below === null) below = keys[0];
+    if (above === null) above = keys[keys.length - 1];
+    if (below === above) return evalKey(below);
+    const b1 = evalKey(below), b2 = evalKey(above);
+    // interpolate in log(ratio)
+    const w = (log10(ratio) - log10(below)) / (log10(above) - log10(below));
+    return b1 + w * (b2 - b1);
+  }
+
+  // Britter-McQuaid continuous dense-gas: distance to concentration ratio.
+  function britterMcQuaidContinuous(o) {
+    // o:{ qo (m3/s volumetric release rate of gas at source), rho_gas, rho_air, u (m/s @10m), ratio }
+    const { qo, rho_gas, rho_air, u, ratio } = o;
+    const g0 = G * (rho_gas - rho_air) / rho_air; // reduced gravity m/s2
+    const alpha = 0.2 * log10((g0 * g0 * qo) / Math.pow(u, 5));
+    const beta = bmBeta(BM_CONT, ratio, alpha);
+    const Lc = Math.sqrt(qo / u); // characteristic length (qo/u)^0.5
+    const x = Math.pow(10, beta) * Lc;
+    // validity: dense-gas criterion (g0*qo/u^3 / Lc ... ) ; report the group
+    const denseGroup = Math.pow(g0 * qo / (u * u * u), 1 / 2) ; // >~0.15 dense
+    return { distance: x, alpha, beta, reducedGravity: g0, characteristicLength: Lc, denseGasGroup: denseGroup, isDense: denseGroup >= 0.15 };
+  }
+
+  // Britter-McQuaid instantaneous dense-gas: distance to concentration ratio.
+  function britterMcQuaidInstantaneous(o) {
+    // o:{ V (m3 initial gas volume), rho_gas, rho_air, u (m/s), ratio }
+    const { V, rho_gas, rho_air, u, ratio } = o;
+    const g0 = G * (rho_gas - rho_air) / rho_air;
+    const Vc = Math.pow(V, 1 / 3);
+    const alpha = 0.5 * log10(g0 * Vc / (u * u)); // per B&M instantaneous group
+    const beta = bmBeta(BM_INST, clamp(ratio, 0.01, 0.10), alpha);
+    const x = Math.pow(10, beta) * Vc;
+    const denseGroup = Math.pow(g0 * Vc, 0.5) / u;
+    return { distance: x, alpha, beta, reducedGravity: g0, characteristicLength: Vc, denseGasGroup: denseGroup, isDense: denseGroup >= 0.20 };
+  }
+
+  /* =========================================================================
+     4. FIRE MODELS  (pool fire, jet fire, BLEVE)
+     ========================================================================= */
+
+  // Pool fire: burning rate, flame height (Thomas), surface emissive power (Mudan),
+  // radiation at distance via point/solid-flame + atmospheric transmissivity.
+  function poolFire(o) {
+    // o:{ diameter (m), mb_inf (kg/m2/s, Yellow Book Table 6.5), kbeta (1/m, Table 6.5),
+    //     Hc (J/kg), rho_air, uw (wind m/s), sep (kW/m2 override), RH, ambientT }
+    const { diameter, Hc, rho_air = 1.2, uw = 0 } = o;
+    // Yellow Book Eq 6.66 (Burgess): mb = mb_inf*(1-exp(-kbeta*D))
+    const mb_inf = o.mb_inf || 0.055;      // Table 6.5 default (gasoline)
+    const kbeta = o.kbeta || 2.1;          // Table 6.5 default (gasoline)
+    const mb = mb_inf * (1 - Math.exp(-kbeta * diameter));
+    // Yellow Book Eq 6.12 flame length with wind: L/D = 55*(mb/(rho_air*sqrt(gD)))^0.67 * u*^-0.21
+    const uc = Math.pow(G * mb * diameter / rho_air, 1 / 3); // Eq 6.14 char. wind velocity
+    let ustar = uw > 0 ? uw / uc : 1; if (ustar < 1) ustar = 1; // Yellow Book: u*>=1
+    const H = diameter * 55 * Math.pow(mb / (rho_air * Math.sqrt(G * diameter)), 0.67) * Math.pow(ustar, -0.21);
+    // Yellow Book Eq 6.19 Mudan SEP: 140*exp(-0.12D) + 20*(1-exp(-0.12D)) kW/m2
+    let SEP = o.sep;
+    if (!SEP) SEP = 140 * Math.exp(-0.12 * diameter) + 20 * (1 - Math.exp(-0.12 * diameter));
+    return { burnRate: mb, flameHeight: H, sep: SEP, area: Math.PI * diameter * diameter / 4, charWind: uc, _cite: 'poolFire' };
+  }
+
+  // Atmospheric transmissivity — TNO Yellow Book Eq 6.29 (Bagster 1989):
+  //   tau = 2.02 * (pw * x)^-0.09,  pw = RH*psat(H2O) in Pa, x = path length (m).
+  // Valid 1e4 < pw*x < 1e5; clamped to [0.4,1] outside.
+  function transmissivity(o) {
+    const { dist, RH = 0.5, ambientT = 288 } = o;
+    // saturation vapour pressure of water (Pa), Buck equation
+    const Tc = ambientT - 273.15;
+    const Psat = 611.21 * Math.exp((18.678 - Tc / 234.5) * (Tc / (257.14 + Tc)));
+    const Pw = RH * Psat;                 // Pa
+    const PwX = Math.max(Pw * Math.max(dist, 1), 1e-3);
+    const tau = 2.02 * Math.pow(PwX, -0.09);
+    return clamp(tau, 0.4, 1.0);
+  }
+
+  // Mudan/Beyler (SFPE) explicit vertical & horizontal view factors for an
+  // upright cylindrical flame to a ground-level receptor. Arguments:
+  //   a_Hr = flame height / flame radius (H/R)
+  //   b_Lr = receptor distance from flame axis / flame radius (L/R)
+  // Returns the maximum (worst-orientation) view factor = sqrt(Fv^2 + Fh^2).
+  function mudanViewFactor(a_Hr, b_Lr) {
+    const X = b_Lr;    // distance / radius (from flame axis)
+    const Ar = a_Hr;   // flame height / radius
+    if (X <= 1.0001) return 1.0;
+    const A = (Ar * Ar + X * X + 1) / (2 * X);
+    const B = (1 + X * X) / (2 * X);
+    // vertical view factor (receptor plane vertical) — Beyler closed form:
+    const Fvert = (1 / Math.PI) * (
+      (1 / X) * Math.atan(Ar / Math.sqrt(X * X - 1))
+      - (Ar / X) * ((A - (2 / X)) / Math.sqrt(A * A - 1)) * Math.atan(Math.sqrt(((A - 1) * (X + 1)) / ((A + 1) * (X - 1))))
+      + (Ar / X) * (A / Math.sqrt(A * A - 1)) * Math.atan(Math.sqrt((X + 1) / (X - 1)))
+      - (Ar / X) * Math.atan(Math.sqrt((X - 1) / (X + 1)))
+    );
+    // horizontal view factor
+    const Fhoriz = (1 / Math.PI) * (
+      Math.atan(1 / Math.sqrt(X * X - 1))
+      - ((B - (2 / X)) / Math.sqrt(B * B - 1)) * Math.atan(Math.sqrt(((B - 1) * (X + 1)) / ((B + 1) * (X - 1))))
+      + (B / Math.sqrt(B * B - 1)) * Math.atan(Math.sqrt((X + 1) / (X - 1)))
+    );
+    const Fmax = Math.sqrt(Math.max(0, Fvert * Fvert) + Math.max(0, Fhoriz * Fhoriz));
+    return clamp(Fmax, 0, 1);
+  }
+
+  // Radiation received at ground distance L (from flame center) for pool fire.
+  function poolFireRadiation(pf, L, opt) {
+    const { flameHeight: H, sep: SEP, area } = pf;
+    const D = 2 * Math.sqrt(area / Math.PI);
+    const r = D / 2;
+    const F = mudanViewFactor(H / r, L / r);
+    const tau = transmissivity({ dist: Math.max(0, L - r), RH: (opt && opt.RH) || 0.5, ambientT: (opt && opt.ambientT) || 288 });
+    return { flux: SEP * F * tau, viewFactor: F, transmissivity: tau }; // kW/m2
+  }
+
+  // Jet fire — API 521 point-source with radiant fraction.
+  function jetFireRadiation(o, L) {
+    // o:{ mdot (kg/s), Hc (J/kg), radFrac (0-0.4), RH, ambientT }
+    const { mdot, Hc, radFrac = 0.2 } = o;
+    const Qrad = radFrac * mdot * Hc; // W total radiated
+    const tau = transmissivity({ dist: L, RH: o.RH || 0.5, ambientT: o.ambientT || 288 });
+    const flux = (Qrad * tau) / (4 * Math.PI * L * L); // W/m2
+    return { flux: flux / 1000, totalRadiated: Qrad / 1e6, transmissivity: tau }; // kW/m2, MW
+  }
+
+  // BLEVE fireball — TNO Yellow Book Ch.6 (TNO 1983):
+  //   radius rfb = 3.24 * m^0.325  (Eq 6.90) -> diameter 6.48 m^0.325
+  //   duration  t = 0.852 * m^0.26 (Eq 6.91)
+  //   height Hbleve = 2*rfb; view factor Fview = (rfb/X)^2 (Eq 6.93)
+  //   SEP = dHrad*m*Fs / (4*pi*rfb^2*t)  with Fs radiant fraction (Eq 6.95)
+  function bleve(o, L) {
+    // o:{ mass (kg fuel), Hc (J/kg net), radFrac (Fs; if <=0 use Psv-based), Psv (Pa), RH, ambientT }
+    const { mass, Hc, RH = 0.5, ambientT = 288 } = o;
+    const rfb = 3.24 * Math.pow(mass, 0.325);       // m  (Eq 6.90)
+    const Dmax = 2 * rfb;
+    const dur = 0.852 * Math.pow(mass, 0.26);       // s  (Eq 6.91)
+    const Hbleve = 2 * rfb;                          // m  (Eq 6.22)
+    // radiant fraction Fs: Eq 6.21 from vessel vapour pressure if given, else radFrac
+    let Fs = o.radFrac;
+    if (o.Psv && (!Fs || Fs <= 0)) Fs = clamp(0.00325 * Math.pow(o.Psv, 0.32), 0.1, 0.4);
+    if (!Fs || Fs <= 0) Fs = 0.3;
+    // radiated energy per unit fireball surface over the duration (Eq 6.95)
+    const SEP = (Fs * mass * Hc) / (4 * Math.PI * rfb * rfb * dur); // W/m2 (using Hc as available radiant enthalpy)
+    // geometry: centre-to-target distance X, path x = X - rfb (Eq 6.92/6.96)
+    const X = Math.sqrt(L * L + Hbleve * Hbleve);
+    const Fview = Math.min(1, (rfb / Math.max(X, rfb)) * (rfb / Math.max(X, rfb))); // Eq 6.93
+    const tau = transmissivity({ dist: Math.max(X - rfb, 1), RH, ambientT });
+    const flux = SEP * Fview * tau; // W/m2 (Eq 6.4)
+    return {
+      fireballDiameter: Dmax, radius: rfb, duration: dur, centreHeight: Hbleve,
+      sep: SEP / 1000, flux: flux / 1000, viewFactor: Fview, transmissivity: tau, radiantFraction: Fs,
+      _cite: 'bleve'
+    }; // kW/m2
+  }
+
+  /* =========================================================================
+     5. EXPLOSION MODELS  (TNO Multi-Energy, TNT equivalency)
+     ========================================================================= */
+
+  // TNO Multi-Energy — Alonso et al. (2006) curve fits: Ps' = a*(R')^b.
+  const TNO_ME = {
+    1: [[0.23, 0.6, 1e-2, 0], [0.6, 7, 6.40e-3, -0.97]],
+    2: [[0.23, 0.7, 2e-2, 0], [0.7, 12, 1.32e-2, -0.98]],
+    3: [[0.23, 0.6, 5e-2, 0], [0.6, 30, 6.05e-2, -0.99]],
+    4: [[0.23, 0.5, 1e-1, 0], [0.5, 70, 6.44e-2, -0.99]],
+    5: [[0.23, 0.6, 2e-1, 0], [0.6, 90, 1.17e-1, -0.99]],
+    6: [[0.23, 0.6, 5e-1, 0], [0.6, 100, 3.01e-1, -1.11]],
+    7: [[0.23, 0.5, 1, 0], [0.5, 100, 4.06e-1, -1.20]],
+    8: [[0.23, 0.5, 2, 0], [0.5, 1, 4.76e-1, -2.08], [1, 2, 4.67e-1, -1.58], [2, 100, 3.18e-1, -1.13]],
+    9: [[0.23, 0.35, 5, 0], [0.35, 1, 4.87e-1, -2.03], [1, 2, 4.67e-1, -1.58], [2, 100, 3.18e-1, -1.13]],
+    10: [[0.23, 1, 4.41e-1, -2.39], [1, 2, 4.67e-1, -1.58], [2, 100, 3.18e-1, -1.13]]
+  };
+  const TNO_ME_IMP = {
+    1: [[0.23, 0.6, 4.41e-2, -0.20], [0.6, 7, 2.96e-2, -0.94]],
+    2: [[0.23, 0.7, 5.22e-2, -0.27], [0.7, 12, 4.03e-2, -1.05]],
+    3: [[0.23, 0.6, 8.74e-2, -0.20], [0.6, 30, 6.05e-2, -0.99]],
+    4: [[0.23, 0.5, 1.4e-1, 0], [0.5, 70, 6.77e-2, -0.97]],
+    5: [[0.23, 0.6, 1.25e-1, -0.26], [0.6, 90, 8.46e-2, -1.00]],
+    6: [[0.23, 0.8, 1.28e-1, -0.45], [0.8, 100, 1.14e-1, -1.03]],
+    7: [[0.23, 0.6, 1.98e-1, -0.49], [0.6, 100, 1.14e-1, -1.03]],
+    8: [[0.23, 0.6, 1.66e-1, -0.90], [0.6, 100, 1.14e-1, -1.03]],
+    9: [[0.23, 0.3, 1.11, 0.89], [0.3, 0.4, 3.08e-1, -1.08], [0.4, 0.8, 8.08e-2, -2.26], [0.8, 100, 1.14e-1, -1.03]],
+    10: [[0.23, 0.3, 10.82, 1.14], [0.3, 0.4, 3.15e-1, -1.79], [0.4, 0.5, 1.30e-3, -7.52], [0.5, 100, 1.14e-1, -1.03]]
+  };
+
+  function tnoPiece(table, cls, Rp) {
+    const segs = table[cls] || table[7];
+    for (const seg of segs) {
+      const [lo, hi, a, b] = seg;
+      if (Rp >= lo && Rp <= hi) return a * Math.pow(Rp, b);
+    }
+    // extrapolate with far-field segment
+    const last = segs[segs.length - 1];
+    return last[2] * Math.pow(Rp, last[3]);
+  }
+
+  // Full TNO ME calc.  o:{ E (J combustion energy in congested cloud), cls (1-10),
+  //                        Pa (Pa), c0 (m/s sound speed), dist (m) }
+  function tnoMultiEnergy(o, L) {
+    const { E, cls = 7, Pa = P_ATM, c0 = 340 } = o;
+    const R0 = Math.pow(E / Pa, 1 / 3);        // combustion-energy scaled length
+    const Rp = clamp(L / R0, 0.23, 100);       // scaled distance R'
+    const Psp = tnoPiece(TNO_ME, cls, Rp);     // scaled overpressure
+    const isp = tnoPiece(TNO_ME_IMP, cls, Rp); // scaled impulse
+    const dP = Psp * Pa;                        // Pa overpressure
+    const impulse = isp * Pa * R0 / c0;         // Pa.s  (i = i' * Pa^(2/3)*E^(1/3)/c0)
+    return { overpressure: dP, overpressure_kPa: dP / 1000, scaledDistance: Rp, scaledOverpressure: Psp, impulse, scaledLength: R0 };
+  }
+
+  // Distance to a target overpressure (Pa) for TNO ME.
+  function tnoDistanceToOverpressure(o, targetPa) {
+    const { E, cls = 7, Pa = P_ATM } = o;
+    const R0 = Math.pow(E / Pa, 1 / 3);
+    const target = targetPa / Pa;
+    let lo = 0.23, hi = 100;
+    // Ps' decreasing in R'; find R' where Ps'==target
+    const f = (Rp) => tnoPiece(TNO_ME, cls, Rp) - target;
+    if (f(lo) < 0) return R0 * lo; // target above source strength -> within source
+    if (f(hi) > 0) return R0 * hi; // never decays below target within range
+    for (let i = 0; i < 200; i++) {
+      const mid = Math.sqrt(lo * hi);
+      if (f(mid) > 0) lo = mid; else hi = mid;
+    }
+    return R0 * Math.sqrt(lo * hi);
+  }
+
+  // TNT equivalency (CPQRA / Crowl & Louvar).  Sachs/Hopkinson scaled distance.
+  function tntEquivalency(o, L) {
+    // o:{ mass (kg fuel in cloud), Hc (J/kg), eff (yield 0.01-0.1), Hc_tnt=4.68e6 }
+    const { mass, Hc, eff = 0.03, Hc_tnt = 4.68e6 } = o;
+    const Wtnt = eff * mass * Hc / Hc_tnt; // kg TNT
+    const z = L / Math.pow(Wtnt, 1 / 3);   // scaled distance m/kg^1/3
+    // Overpressure from scaled distance — Kingery-Bulmash-like fit (kPa):
+    const dP = overpressureFromZ(z); // kPa
+    return { tntMass: Wtnt, scaledDistance: z, overpressure_kPa: dP, overpressure: dP * 1000 };
+  }
+  // Crowl & Louvar Fig curve fit: overpressure vs scaled distance (surface burst).
+  function overpressureFromZ(z) {
+    z = clamp(z, 0.05, 40);
+    // Use the classic correlation (Kinney & Graham) for peak side-on overpressure (kPa):
+    const num = 808 * (1 + Math.pow(z / 4.5, 2));
+    const d1 = Math.sqrt(1 + Math.pow(z / 0.048, 2));
+    const d2 = Math.sqrt(1 + Math.pow(z / 0.32, 2));
+    const d3 = Math.sqrt(1 + Math.pow(z / 1.35, 2));
+    const Pr = num / (d1 * d2 * d3); // ratio * Po (P/Po)
+    return Pr * 101.325; // kPa
+  }
+  function tntDistanceToOverpressure(o, targetPa) {
+    const { mass, Hc, eff = 0.03, Hc_tnt = 4.68e6 } = o;
+    const Wtnt = eff * mass * Hc / Hc_tnt;
+    const targetKpa = targetPa / 1000;
+    let lo = 0.05, hi = 40;
+    const f = (z) => overpressureFromZ(z) - targetKpa; // decreasing in z
+    if (f(lo) < 0) return 0;
+    if (f(hi) > 0) return hi * Math.pow(Wtnt, 1 / 3);
+    for (let i = 0; i < 200; i++) { const mid = Math.sqrt(lo * hi); if (f(mid) > 0) lo = mid; else hi = mid; }
+    return Math.sqrt(lo * hi) * Math.pow(Wtnt, 1 / 3);
+  }
+
+  // Purple Book simplified Multi-Energy (CPR 18E §4.8, mandated QRA form):
+  //   cloud combustion energy E (J) in obstructed regions (fraction f_obstr of total),
+  //   R(0.3 bar) = 1.5*(f_obstr*E/Pa)^1/3   (Eq 4.5)
+  //   R(0.1 bar) = 3.0*(f_obstr*E/Pa)^1/3   (Eq 4.6)
+  // Returns distances (m) to the two mandated overpressure contours.
+  function purpleVCE(o) {
+    // o:{ cloudMass (kg), Hc (J/kg), fObstr (default 0.08), Pa }
+    const { cloudMass, Hc, fObstr = 0.08, Pa = P_ATM } = o;
+    const E = cloudMass * Hc;
+    const scaled = Math.pow(fObstr * E / Pa, 1 / 3);
+    return {
+      energy: E, fObstr,
+      R_0_3bar: 1.5 * scaled,   // 30 kPa contour (100% lethality)
+      R_0_1bar: 3.0 * scaled,   // 10 kPa contour (2.5% indoor lethality)
+      _cite: 'purpleVCE'
+    };
+  }
+
+  /* =========================================================================
+     6. VULNERABILITY  (probits & endpoints)
+     ========================================================================= */
+  // Toxic probits — Pr = a + b*ln(C^n * t), C in mg/m3, t in MINUTES.
+  //   'gb' = Green Book (CPR 16E) Table 5.3 (b=1 conservative);
+  //   'pb' = Purple Book (CPR 18E) Table 5.2 (Dutch QRA-mandated).
+  const TOXPROBITS = {
+    chlorine:  { gb:{a:-14.3,b:1,n:2.3},  pb:{a:-6.35,b:0.5,n:2.75}, label:'Chlorine' },
+    ammonia:   { gb:{a:-15.8,b:1,n:2.0},  pb:{a:-15.6,b:1,n:2.0},    label:'Ammonia' },
+    h2s:       { gb:{a:-11.5,b:1,n:1.9},  pb:{a:-11.5,b:1,n:1.9},    label:'Hydrogen sulphide' },
+    so2:       { gb:{a:-19.2,b:1,n:2.4},  pb:{a:-19.2,b:1,n:2.4},    label:'Sulphur dioxide' },
+    co:        { gb:{a:-7.4,b:1,n:1.0},   pb:{a:-7.4,b:1,n:1.0},     label:'Carbon monoxide' },
+    hf:        { gb:{a:-8.4,b:1,n:1.5},   pb:{a:-8.4,b:1,n:1.5},     label:'Hydrogen fluoride' },
+    hcl:       { gb:{a:-6.7,b:1,n:1.0},   pb:{a:-6.7,b:1,n:1.0},     label:'Hydrogen chloride' },
+    acrolein:  { gb:{a:-4.1,b:1,n:1.0},   pb:{a:-4.1,b:1,n:1.0},     label:'Acrolein' },
+    methylbromide:{ gb:{a:-7.3,b:1,n:1.1},pb:{a:-7.3,b:1,n:1.1},     label:'Methyl bromide' },
+    phosgene:  { gb:{a:-0.8,b:1,n:0.9},   pb:{a:-0.8,b:1,n:0.9},     label:'Phosgene' },
+    no2:       { gb:{a:-18.6,b:1,n:3.7},  pb:{a:-18.6,b:1,n:3.7},    label:'Nitrogen dioxide' },
+    ethyleneoxide:{ gb:{a:-6.8,b:1,n:1.0},pb:{a:-6.8,b:1,n:1.0},     label:'Ethylene oxide' },
+    bromine:   { gb:{a:-12.4,b:1,n:2.0},  pb:{a:-12.4,b:1,n:2.0},    label:'Bromine' },
+    hcn:       { gb:{a:-9.8,b:1,n:2.4},   pb:{a:-9.8,b:1,n:2.4},     label:'Hydrogen cyanide' },
+    acrylonitrile:{ gb:{a:-8.6,b:1,n:1.3},pb:{a:-8.6,b:1,n:1.3},     label:'Acrylonitrile' }
+  };
+  // Thermal & overpressure probits — Y = k1 + k2 ln(V).
+  const PROBITS = {
+    // thermal: V = t * q^(4/3), q in W/m2, t in s  (Green Book Eq 3.4/3.5/3.7)
+    thermal_death:   { k1: -36.38, k2: 2.56,   kind: 'thermal', label: 'Thermal radiation — fatality (TNO)' },
+    thermal_2ndburn: { k1: -43.14, k2: 3.0186, kind: 'thermal', label: 'Thermal — 2nd degree burns' },
+    thermal_1stburn: { k1: -39.83, k2: 3.0186, kind: 'thermal', label: 'Thermal — 1st degree burns' },
+    // overpressure: eardrum rupture, Ps in Pa (Green Book Eq 12)
+    op_eardrum:      { k1: -12.6, k2: 1.524, kind: 'overpressure', label: 'Overpressure — eardrum rupture' }
+  };
+
+  function probit(model, V) {
+    const m = typeof model === 'string' ? PROBITS[model] : model;
+    if (!m || V <= 0) return { Y: 0, fraction: 0 };
+    const Y = m.k1 + m.k2 * Math.log(V);
+    return { Y, fraction: probitToFraction(Y) };
+  }
+  // Toxic probit — Pr = a+b*ln(C^n*t), C in mg/m3, t in min. set='gb' or 'pb'.
+  function toxicProbit(chemKey, C_mgm3, t_min, set = 'gb') {
+    const rec = TOXPROBITS[chemKey]; if (!rec) return null;
+    const p = rec[set] || rec.gb;
+    if (C_mgm3 <= 0 || t_min <= 0) return { Y: 0, fraction: 0, p };
+    const Y = p.a + p.b * Math.log(Math.pow(C_mgm3, p.n) * t_min);
+    return { Y, fraction: probitToFraction(Y), p, set };
+  }
+  // toxic load V (legacy generic): C^n * t
+  function toxicLoad(C, t_min, n) { return Math.pow(C, n) * t_min; }
+  // thermal dose V = t*q^(4/3), q in W/m2 (input kW/m2 -> W/m2)
+  function thermalDose(I_kwm2, t_s) { return t_s * Math.pow(I_kwm2 * 1000, 4 / 3); }
+  // ppm (vol) <-> mg/m3, using ideal gas at T (K), P (Pa)
+  function ppmToMgm3(ppm, MW, T = 288.15, P = P_ATM) { return ppm * 1e-6 * (P / (R_GAS * T)) * MW * 1000; }
+  function mgm3ToPpm(mg, MW, T = 288.15, P = P_ATM) { return mg / ((P / (R_GAS * T)) * MW * 1000) * 1e6; }
+  // Purple Book overpressure lethality bands (Fig 5.5): returns {pOut,pInDefault}
+  function overpressureLethality(dP_Pa) {
+    const barg = dP_Pa / 1e5;
+    if (barg > 0.3) return { pOutdoor: 1.0, pIndoor: 1.0, band: '>0.3 barg — 100% lethality' };
+    if (barg > 0.1) return { pOutdoor: 0.0, pIndoor: 0.025, band: '0.1–0.3 barg — 2.5% indoor lethality' };
+    return { pOutdoor: 0.0, pIndoor: 0.0, band: '≤0.1 barg — no lethality' };
+  }
+
+  // Standard effect endpoints for zone plotting.
+  const THERMAL_ENDPOINTS = [
+    { flux: 37.5, label: '37.5 kW/m² — equipment damage / 100% lethality 1 min' },
+    { flux: 12.5, label: '12.5 kW/m² — piloted ignition of wood / 1% lethality' },
+    { flux: 4.7, label: '4.7 kW/m² — pain in ~15-20 s / injury threshold' },
+    { flux: 1.6, label: '1.6 kW/m² — no discomfort long exposure' }
+  ];
+  const OVERPRESSURE_ENDPOINTS = [
+    { op_kpa: 20.7, label: '20.7 kPa (3 psi) — heavy building damage' },
+    { op_kpa: 13.8, label: '13.8 kPa (2 psi) — repairable house damage / injuries' },
+    { op_kpa: 6.9, label: '6.9 kPa (1 psi) — partial demolition / glass injuries' },
+    { op_kpa: 2.1, label: '2.1 kPa (0.3 psi) — 90% glass breakage' }
+  ];
+
+  /* =========================================================================
+     7. HELPERS — psat, gas density
+     ========================================================================= */
+  function antoinePsat(A, B, C, T) { // returns Pa; Antoine with log10, P in mmHg then ->Pa
+    const p_mmHg = Math.pow(10, A - B / (C + (T - 273.15)));
+    return p_mmHg * 133.322;
+  }
+  function gasDensity(MW, T, P = P_ATM) { return (P * (MW / 1000)) / (R_GAS * T); }
+
+  /* =========================================================================
+     7b. TNO STANDARD DEFAULTS (Purple Book CPR 18E) — for UI presets
+     ========================================================================= */
+  // Six mandated weather classes (Purple Book §4.10 / App 4.B)
+  const WEATHER_CLASSES = [
+    { id: 'B3',   stab: 'B', wind: 3,   label: 'B / 3 — unstable, medium wind' },
+    { id: 'D1.5', stab: 'D', wind: 1.5, label: 'D / 1.5 — neutral, low wind' },
+    { id: 'D5',   stab: 'D', wind: 5,   label: 'D / 5 — neutral, medium wind' },
+    { id: 'D9',   stab: 'D', wind: 9,   label: 'D / 9 — neutral, high wind' },
+    { id: 'E5',   stab: 'E', wind: 5,   label: 'E / 5 — slightly stable, medium wind' },
+    { id: 'F1.5', stab: 'F', wind: 1.5, label: 'F / 1.5 — stable night, worst dispersion' }
+  ];
+  // Standard LOC scenarios (Purple Book Ch.3)
+  const LOC_SCENARIOS = [
+    { id: 'G1', label: 'G.1 — Instantaneous release of full inventory', releaseType: 'instantaneous', hole: null, note: 'Catastrophic vessel failure; whole inventory' },
+    { id: 'G2', label: 'G.2 — Full inventory released continuously in 10 min', releaseType: 'continuous', hole: null, dur: 600, note: 'Constant rate = inventory / 600 s' },
+    { id: 'G3', label: 'G.3 — Continuous release from 10 mm hole', releaseType: 'continuous', hole: 10, note: 'Standard small continuous leak' },
+    { id: 'FBR', label: 'Pipe — full-bore rupture', releaseType: 'continuous', hole: null, fullbore: true, note: 'Both-sided outflow; Cd 1.0' },
+    { id: 'LEAK', label: 'Pipe/pump — leak (10% dia, max 50 mm)', releaseType: 'continuous', hole: 50, note: 'Leak = 10% nominal dia, capped 50 mm' }
+  ];
+  const TNO_DEFAULTS = { Tamb: 9, P_atm: 101510, RH: 83, Cd: 0.62, releaseHeight: 1, durationCap: 1800,
+                         avgFlammable: 20, avgToxic: 600, fObstr: 0.08, meClassPurple: 10 };
+
+  /* ========================================================================= */
+  const API = {
+    // constants & utils
+    G, R_GAS, P_ATM, erf, normCdf, probitToFraction, clamp, log10, CITES,
+    // source
+    gasDischarge, liquidDischarge, flashFraction, poolEvaporation,
+    // dispersion
+    pgSigma, gaussianPlumeConc, gaussianPlumeDistance,
+    britterMcQuaidContinuous, britterMcQuaidInstantaneous, BM_CONT, BM_INST,
+    // fire
+    poolFire, transmissivity, mudanViewFactor, poolFireRadiation, jetFireRadiation, bleve,
+    // explosion
+    tnoMultiEnergy, tnoDistanceToOverpressure, tntEquivalency, tntDistanceToOverpressure,
+    overpressureFromZ, purpleVCE, TNO_ME, TNO_ME_IMP,
+    // vulnerability
+    PROBITS, TOXPROBITS, probit, toxicProbit, toxicLoad, thermalDose,
+    ppmToMgm3, mgm3ToPpm, overpressureLethality, THERMAL_ENDPOINTS, OVERPRESSURE_ENDPOINTS,
+    // standards / presets
+    WEATHER_CLASSES, LOC_SCENARIOS, TNO_DEFAULTS,
+    // helpers
+    antoinePsat, gasDensity
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  root.QRA = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* ---- Chemical property database (TNO-grounded) ---------------------------
+   Representative literature values for screening; users can edit.
+   MW g/mol; Tb K (nbp); Hvap J/kg; Cp_liq J/kg/K; rho_liq kg/m3;
+   Hc J/kg (net); gamma (gas Cp/Cv); LFL/UFL vol%; antoine {A,B,C} (log10 mmHg,degC);
+   flammable/toxic flags; endpoints ppm (ERPG-2/3, IDLH).
+   TNO additions:
+     toxKey  -> key into QRA.TOXPROBITS (Green/Purple Book probits, C in mg/m3, t in min)
+     mbInf   -> Yellow Book Table 6.5 max mass burning rate kg/m2/s (pool fire)
+     kbeta   -> Yellow Book Table 6.5 extinction coefficient 1/m
+     react   -> reactivity class 'low' | 'avg' | 'high' (Purple Book Table 4.7)
+     suggClass -> suggested Multi-Energy blast strength (full-ME option; Purple Book mandates 10)
+--------------------------------------------------------------------------- */
+const CHEM_SEED = {
+  methane:      {name:'Methane', MW:16.04, Tb:111.7, Hvap:5.10e5, Cp_liq:3480, rho_liq:422, Hc:50.0e6, gamma:1.31, LFL:5.0, UFL:15.0, antoine:{A:6.61184,B:389.93,C:266.0}, flammable:true, toxic:false, mbInf:0.078, kbeta:1.1, react:'low', suggClass:6, note:'Simple asphyxiant; jet/flash fire, VCE if congested'},
+  propane:      {name:'Propane', MW:44.10, Tb:231.1, Hvap:4.25e5, Cp_liq:2500, rho_liq:582, Hc:46.3e6, gamma:1.13, LFL:2.1, UFL:9.5, antoine:{A:6.80398,B:803.81,C:246.99}, flammable:true, toxic:false, mbInf:0.099, kbeta:1.4, react:'avg', suggClass:6, note:'LPG; BLEVE credible for pressurised storage'},
+  butane:       {name:'n-Butane', MW:58.12, Tb:272.7, Hvap:3.86e5, Cp_liq:2400, rho_liq:601, Hc:45.7e6, gamma:1.09, LFL:1.8, UFL:8.4, antoine:{A:6.80896,B:935.86,C:238.73}, flammable:true, toxic:false, mbInf:0.078, kbeta:2.7, react:'avg', suggClass:6, note:'LPG component; BLEVE credible'},
+  ethylene:     {name:'Ethylene', MW:28.05, Tb:169.4, Hvap:4.82e5, Cp_liq:2400, rho_liq:568, Hc:47.2e6, gamma:1.24, LFL:2.7, UFL:36.0, antoine:{A:6.74756,B:585.0,C:255.0}, flammable:true, toxic:false, mbInf:0.085, kbeta:2.0, react:'high', suggClass:8, note:'High reactivity; strong VCE potential (high blast class)'},
+  propylene:    {name:'Propylene', MW:42.08, Tb:225.5, Hvap:4.40e5, Cp_liq:2450, rho_liq:609, Hc:45.8e6, gamma:1.15, LFL:2.0, UFL:11.1, antoine:{A:6.81960,B:785.0,C:247.0}, flammable:true, toxic:false, mbInf:0.099, kbeta:1.4, react:'high', suggClass:7, note:'Reactive olefin; elevated blast class'},
+  hydrogen:     {name:'Hydrogen', MW:2.016, Tb:20.3, Hvap:4.46e5, Cp_liq:9700, rho_liq:70.8, Hc:120.0e6, gamma:1.41, LFL:4.0, UFL:75.0, antoine:{A:5.82438,B:67.5,C:275.7}, flammable:true, toxic:false, mbInf:0.169, kbeta:6.1, react:'high', suggClass:9, note:'Very wide flammable range; high blast class; buoyant'},
+  ammonia:      {name:'Ammonia', MW:17.03, Tb:239.8, Hvap:1.371e6, Cp_liq:4700, rho_liq:682, Hc:18.6e6, gamma:1.31, LFL:15.0, UFL:28.0, antoine:{A:7.36050,B:926.13,C:240.17}, flammable:true, toxic:true, erpg2:150, erpg3:750, idlh:300, toxKey:'ammonia', mbInf:0.06, kbeta:1.1, react:'low', suggClass:5, note:'Toxic + flammable; dense-then-buoyant behaviour'},
+  chlorine:     {name:'Chlorine', MW:70.91, Tb:239.1, Hvap:2.88e5, Cp_liq:929, rho_liq:1563, Hc:0, gamma:1.35, LFL:0, UFL:0, antoine:{A:6.93790,B:861.34,C:246.33}, flammable:false, toxic:true, erpg2:3, erpg3:20, idlh:10, toxKey:'chlorine', note:'Toxic dense gas; classic land-use planning driver'},
+  h2s:          {name:'Hydrogen Sulphide', MW:34.08, Tb:212.8, Hvap:5.48e5, Cp_liq:1900, rho_liq:993, Hc:15.2e6, gamma:1.32, LFL:4.3, UFL:46.0, antoine:{A:6.99392,B:768.13,C:249.24}, flammable:true, toxic:true, erpg2:30, erpg3:100, idlh:100, toxKey:'h2s', mbInf:0.05, kbeta:2.0, react:'avg', suggClass:6, note:'Sour gas; toxic + flammable; dense'},
+  so2:          {name:'Sulphur Dioxide', MW:64.07, Tb:263.1, Hvap:3.89e5, Cp_liq:1360, rho_liq:1460, Hc:0, gamma:1.29, LFL:0, UFL:0, antoine:{A:7.28228,B:999.90,C:237.19}, flammable:false, toxic:true, erpg2:3, erpg3:15, idlh:100, toxKey:'so2', note:'Toxic dense gas'},
+  co:           {name:'Carbon Monoxide', MW:28.01, Tb:81.7, Hvap:2.16e5, Cp_liq:2200, rho_liq:789, Hc:10.1e6, gamma:1.40, LFL:12.5, UFL:74.0, antoine:{A:6.24020,B:230.27,C:260.0}, flammable:true, toxic:true, erpg2:350, erpg3:500, idlh:1200, toxKey:'co', mbInf:0.05, kbeta:2.0, react:'low', suggClass:5, note:'Toxic + flammable'},
+  benzene:      {name:'Benzene', MW:78.11, Tb:353.2, Hvap:3.94e5, Cp_liq:1740, rho_liq:876, Hc:40.1e6, gamma:1.12, LFL:1.2, UFL:7.8, antoine:{A:6.90565,B:1211.03,C:220.79}, flammable:true, toxic:true, erpg2:150, erpg3:1000, idlh:500, mbInf:0.085, kbeta:2.7, react:'avg', suggClass:6, note:'Flammable + carcinogen; pool fire / flash fire'},
+  toluene:      {name:'Toluene', MW:92.14, Tb:383.8, Hvap:3.60e5, Cp_liq:1700, rho_liq:867, Hc:40.6e6, gamma:1.09, LFL:1.1, UFL:7.1, antoine:{A:6.95464,B:1344.80,C:219.48}, flammable:true, toxic:false, mbInf:0.07, kbeta:2.0, react:'avg', suggClass:6, note:'Flammable liquid; pool fire'},
+  methanol:     {name:'Methanol', MW:32.04, Tb:337.8, Hvap:1.10e6, Cp_liq:2510, rho_liq:792, Hc:20.0e6, gamma:1.20, LFL:6.0, UFL:36.0, antoine:{A:7.89750,B:1474.08,C:229.13}, flammable:true, toxic:true, erpg2:1000, erpg3:5000, idlh:6000, mbInf:0.015, kbeta:100, react:'avg', suggClass:6, note:'Flammable; low-luminosity pool fire'},
+  acetone:      {name:'Acetone', MW:58.08, Tb:329.2, Hvap:5.18e5, Cp_liq:2150, rho_liq:791, Hc:28.6e6, gamma:1.11, LFL:2.5, UFL:12.8, antoine:{A:7.02447,B:1161.0,C:224.0}, flammable:true, toxic:false, mbInf:0.041, kbeta:1.9, react:'avg', suggClass:6, note:'Flammable solvent'},
+  gasoline:     {name:'Gasoline (avg)', MW:100, Tb:333, Hvap:3.50e5, Cp_liq:2200, rho_liq:740, Hc:44.0e6, gamma:1.05, LFL:1.4, UFL:7.6, antoine:{A:6.90,B:1211,C:220}, flammable:true, toxic:false, mbInf:0.055, kbeta:2.1, react:'avg', suggClass:6, note:'Multicomponent; pool fire / flash fire; surrogate props'},
+  diesel:       {name:'Diesel / Gas Oil', MW:200, Tb:530, Hvap:2.50e5, Cp_liq:2050, rho_liq:840, Hc:43.0e6, gamma:1.03, LFL:0.6, UFL:7.5, antoine:{A:6.90,B:1800,C:200}, flammable:true, toxic:false, mbInf:0.039, kbeta:3.5, react:'avg', suggClass:5, note:'High-boiling; pool fire dominant, low volatility'},
+  crude:        {name:'Crude Oil (light)', MW:150, Tb:400, Hvap:3.00e5, Cp_liq:2000, rho_liq:820, Hc:43.0e6, gamma:1.05, LFL:0.9, UFL:7.0, antoine:{A:6.90,B:1400,C:210}, flammable:true, toxic:false, mbInf:0.045, kbeta:2.8, react:'avg', suggClass:5, note:'Wide-boiling mixture; pool fire; surrogate props'},
+  lng:          {name:'LNG (as methane)', MW:16.04, Tb:111.7, Hvap:5.10e5, Cp_liq:3480, rho_liq:422, Hc:50.0e6, gamma:1.31, LFL:5.0, UFL:15.0, antoine:{A:6.61184,B:389.93,C:266.0}, flammable:true, toxic:false, mbInf:0.078, kbeta:1.1, react:'low', suggClass:6, note:'Cryogenic; RPT, rapid boiling pool, flash/VCE'},
+  ethane:       {name:'Ethane', MW:30.07, Tb:184.6, Hvap:4.89e5, Cp_liq:2400, rho_liq:544, Hc:47.5e6, gamma:1.19, LFL:3.0, UFL:12.5, antoine:{A:6.80266,B:656.40,C:256.0}, flammable:true, toxic:false, mbInf:0.078, kbeta:2.7, react:'avg', suggClass:6, note:'Light hydrocarbon; jet/flash fire, VCE'},
+  ethyleneoxide:{name:'Ethylene Oxide', MW:44.05, Tb:283.6, Hvap:5.69e5, Cp_liq:1970, rho_liq:882, Hc:27.7e6, gamma:1.21, LFL:3.0, UFL:100, antoine:{A:7.12840,B:1054.54,C:237.76}, flammable:true, toxic:true, erpg2:50, erpg3:500, idlh:800, toxKey:'ethyleneoxide', mbInf:0.06, kbeta:2.0, react:'high', suggClass:8, note:'Reactive/decomposable; toxic + flammable; wide range'},
+  vcm:          {name:'Vinyl Chloride', MW:62.50, Tb:259.8, Hvap:3.33e5, Cp_liq:1350, rho_liq:911, Hc:18.8e6, gamma:1.18, LFL:3.6, UFL:33.0, antoine:{A:6.49712,B:783.42,C:230.0}, flammable:true, toxic:true, erpg2:250, erpg3:1200, idlh:null, mbInf:0.06, kbeta:2.0, react:'avg', suggClass:6, note:'Flammable + carcinogen; BLEVE credible'},
+  hf:           {name:'Hydrogen Fluoride', MW:20.01, Tb:292.7, Hvap:1.512e6, Cp_liq:2530, rho_liq:958, Hc:0, gamma:1.41, LFL:0, UFL:0, antoine:{A:7.37,B:1316.8,C:250.0}, flammable:false, toxic:true, erpg2:20, erpg3:50, idlh:30, toxKey:'hf', note:'Highly toxic; strong hydrogen bonding, near-boiling; special models normally needed'},
+  hcl:          {name:'Hydrogen Chloride', MW:36.46, Tb:188.1, Hvap:4.44e5, Cp_liq:1560, rho_liq:1190, Hc:0, gamma:1.40, LFL:0, UFL:0, antoine:{A:7.17000,B:744.49,C:258.7}, flammable:false, toxic:true, erpg2:20, erpg3:150, idlh:50, toxKey:'hcl', note:'Toxic corrosive gas; dense'},
+  butadiene:    {name:'1,3-Butadiene', MW:54.09, Tb:268.7, Hvap:4.18e5, Cp_liq:2200, rho_liq:621, Hc:44.6e6, gamma:1.12, LFL:2.0, UFL:12.0, antoine:{A:6.84999,B:930.55,C:238.85}, flammable:true, toxic:true, erpg2:200, erpg3:5000, idlh:2000, mbInf:0.08, kbeta:2.0, react:'high', suggClass:7, note:'Reactive diene; polymerisation, VCE, BLEVE'}
+};
+</script>
+<script>
+/* ==========================================================================
+   Risk2Safe QRA Consequence Studio — application layer
+   ========================================================================== */
+'use strict';
+const LSKEY='r2s_qra_studio_v1';
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const fmt=(x,d=3)=>{ if(x===null||x===undefined||!isFinite(x))return '—'; const a=Math.abs(x);
+  if(a!==0&&(a<1e-3||a>=1e5))return x.toExponential(d-1);
+  return Number(x.toFixed(d)).toLocaleString(undefined,{maximumFractionDigits:d}); };
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- persistent state ---------- */
+let DB, PROJ;
+function defaultProject(){
+  return {
+    meta:{name:'Untitled QRA study', analyst:'', facility:'', date:new Date().toISOString().slice(0,10), notes:''},
+    scenario:{
+      chem:'propane', phase:'liquid', releaseType:'continuous', loc:'G3',
+      P:8, T:25, holeD:10, Cd:0.62, invMass:20000, head:2, dur:600,
+      wind:5, stab:'D', terrain:'rural', Tamb:9, RH:83,
+      fireType:'jet', radFrac:0.20, poolDiam:0, poolArea:0,
+      vceMethod:'purple', tnoClass:6, fObstr:0.08, vceFraction:0.15, tntEff:0.03, congestVol:0,
+      toxSet:'pb', criteria:'uk'
+    },
+    result:null,
+    comparison:[]   // saved runs for side-by-side
+  };
+}
+function loadState(){
+  try{const raw=localStorage.getItem(LSKEY); if(raw){const o=JSON.parse(raw); DB=o.DB; PROJ=o.PROJ;}}catch(e){}
+  if(!DB)DB={chem:JSON.parse(JSON.stringify(CHEM_SEED)), settings:{aiProvider:'anthropic',aiKey:'',aiModel:''}};
+  if(!DB.settings)DB.settings={aiProvider:'anthropic',aiKey:'',aiModel:''};
+  if(!DB.chem)DB.chem=JSON.parse(JSON.stringify(CHEM_SEED));
+  if(!PROJ)PROJ=defaultProject();
+  if(!PROJ.comparison)PROJ.comparison=[];
+  if(!PROJ.scenario.toxSet)PROJ.scenario.toxSet='pb';
+  if(PROJ.scenario.fObstr===undefined)PROJ.scenario.fObstr=0.08;
+}
+function save(){ try{localStorage.setItem(LSKEY,JSON.stringify({DB,PROJ}));}catch(e){console.warn('save failed',e);} }
+
+/* ---------- criteria profiles (UK HSE R2P2 + GCC operator screening) ---------- */
+const CRITERIA={
+  uk:{name:'UK HSE (R2P2 / ALARP)', ir:[
+      {v:1e-3,l:'Intolerable — workers (upper limit)',band:'intolerable'},
+      {v:1e-4,l:'Intolerable — public (upper limit)',band:'intolerable'},
+      {v:1e-6,l:'Broadly acceptable (lower limit)',band:'broadly'}
+    ],note:'Between 1E-6 and the upper limit, risk must be reduced ALARP. R2P2 land-use planning uses risk categories at 10/1/0.3 cpm dangerous dose.'},
+  gcc:{name:'GCC operator screening (ADNOC / Aramco / PDO style)', ir:[
+      {v:1e-3,l:'Intolerable — worker IRPA',band:'intolerable'},
+      {v:1e-5,l:'Tolerable/ALARP upper — public',band:'alarp'},
+      {v:1e-6,l:'Broadly acceptable',band:'broadly'}
+    ],note:'Representative Middle-East operator individual-risk screening bands; confirm the specific operator standard (ADNOC HSE, Saudi Aramco SAEP/GI, PDO SP) for the actual project.'}
+};
+
+/* ---------- helpers on chemical ---------- */
+function chem(id){return DB.chem[id];}
+function psatPa(c,T_K){ if(!c.antoine)return null; return QRA.antoinePsat(c.antoine.A,c.antoine.B,c.antoine.C,T_K); }
+
+/* ==========================================================================
+   CORE ORCHESTRATION — run a full consequence chain for the scenario
+   ========================================================================== */
+function runScenario(){
+  const s=PROJ.scenario, c=chem(s.chem);
+  const T=s.T+273.15, Tamb=s.Tamb+273.15, RH=s.RH/100;
+  const Pabs=s.P*1e5+QRA.P_ATM; // barg -> Pa abs
+  const area=Math.PI*Math.pow(s.holeD/1000,2)/4;
+  const out={chem:c, inputs:JSON.parse(JSON.stringify(s)), warnings:[], source:{}, dispersion:{}, fire:{}, explosion:{}, effects:{}};
+
+  /* ---- SOURCE TERM ---- */
+  let mdot=0, releasePhase=s.phase;
+  if(s.phase==='gas'){
+    const g=QRA.gasDischarge({P1:Pabs,T1:T,MW:c.MW,gamma:c.gamma||1.3,Cd:s.Cd,area});
+    mdot=g.mdot; out.source.gas=g;
+  } else {
+    // liquid: check flashing
+    const Psat=psatPa(c,T);
+    const superheated = Psat && Psat>QRA.P_ATM && T>c.Tb;
+    const rho=c.rho_liq;
+    const liq=QRA.liquidDischarge({P1:Pabs,rho,Cd:s.Cd,area,head:s.head});
+    mdot=liq.mdot; out.source.liquid=liq;
+    if(superheated || T>c.Tb){
+      const fl=QRA.flashFraction({Cp:c.Cp_liq,T_storage:T,Tb:c.Tb,Hvap:c.Hvap});
+      out.source.flash=fl;
+      out.source.airborneRate=mdot*fl.airborneFraction;
+      out.source.poolRate=mdot*fl.rainoutToPool;
+      releasePhase='two-phase';
+    } else {
+      out.source.airborneRate=0; out.source.poolRate=mdot;
+      // pool evaporation (non-boiling)
+      const Psat2=psatPa(c,Tamb)||psatPa(c,T)||1000;
+      const poolArea=s.poolArea>0?s.poolArea:Math.max(1, (mdot/rho)*s.dur/0.01); // spread to ~1cm if unbounded
+      const ev=QRA.poolEvaporation({mode:(Tamb>c.Tb?'boiling':'nonboiling'),area:poolArea,MW:c.MW,Psat:Psat2,T:Tamb,u10:s.wind,Hvap:c.Hvap,Tb:c.Tb});
+      out.source.poolEvap=ev; out.source.poolArea=poolArea;
+      out.source.airborneRate=ev.rate;
+    }
+  }
+  out.source.mdot=mdot; out.source.releasePhase=releasePhase;
+  const airborne = s.phase==='gas'?mdot:(out.source.airborneRate||0);
+  out.source.airborne=airborne;
+
+  /* ---- DISPERSION (flammable + toxic footprints) ---- */
+  const rhoGas=QRA.gasDensity(c.MW,Tamb);
+  const rhoAir=1.204;
+  const dense = rhoGas>1.5*rhoAir;
+  out.dispersion.rhoGas=rhoGas; out.dispersion.dense=dense;
+  const molarV=(QRA.R_GAS*Tamb)/QRA.P_ATM; // m3/mol at ambient
+  // volumetric release rate of vapour at ambient (m3/s)
+  const qo = airborne>0 ? airborne/rhoGas : 0;
+
+  // concentration targets
+  const targets=[];
+  if(c.flammable){ targets.push({key:'LFL',ppm:c.LFL*1e4,label:'LFL (flammable extent)'});
+                   targets.push({key:'½LFL',ppm:c.LFL*0.5*1e4,label:'½ LFL (safety margin)'}); }
+  if(c.toxic){ if(c.idlh)targets.push({key:'IDLH',ppm:c.idlh,label:'IDLH'});
+               if(c.erpg2)targets.push({key:'ERPG-2',ppm:c.erpg2,label:'ERPG-2'});
+               if(c.erpg3)targets.push({key:'ERPG-3',ppm:c.erpg3,label:'ERPG-3'}); }
+  const disp=[];
+  for(const t of targets){
+    const massFrac = ppmToMassFrac(t.ppm,c.MW,29);
+    const Ctarget = massFrac*rhoAir; // kg/m3 (approx: ppm vol -> mass conc)
+    const cRatio = ppmVolToRatio(t.ppm); // vol ratio for B&M
+    let x=null, model='';
+    if(airborne>0){
+      if(dense && qo>0){
+        const bm = s.releaseType==='instantaneous'
+          ? QRA.britterMcQuaidInstantaneous({V:qo*Math.min(s.dur,60),rho_gas:rhoGas,rho_air:rhoAir,u:s.wind,ratio:clampRatio(cRatio)})
+          : QRA.britterMcQuaidContinuous({qo,rho_gas:rhoGas,rho_air:rhoAir,u:s.wind,ratio:clampRatio(cRatio)});
+        x=bm.distance; model=(s.releaseType==='instantaneous'?'B&M instantaneous':'B&M continuous');
+        out.dispersion.bmDense=bm;
+      } else {
+        const cConc = ppmVolToKgm3(t.ppm,c.MW,Tamb);
+        x=QRA.gaussianPlumeDistance({Q:airborne,u:s.wind,H:0,stab:s.stab,terrain:s.terrain},cConc);
+        model='Gaussian P-G';
+      }
+    }
+    disp.push({...t,distance:x,model,ratio:cRatio});
+  }
+  out.dispersion.targets=disp;
+  const lflDist=(disp.find(d=>d.key==='LFL')||{}).distance||0;
+
+  /* ---- FIRE ---- */
+  if(c.flammable){
+    // pool fire (if a pool exists)
+    const poolArea=out.source.poolArea||s.poolArea||0;
+    if(poolArea>0 || s.fireType==='pool'){
+      const D = s.poolDiam>0?s.poolDiam:2*Math.sqrt((poolArea||10)/Math.PI);
+      const pf=QRA.poolFire({diameter:D,Hc:c.Hc,mb_inf:c.mbInf||0.055,kbeta:c.kbeta||2.1,uw:s.wind});
+      out.fire.pool={...pf,diameter:D};
+      out.fire.poolFlux=(L)=>QRA.poolFireRadiation(pf,L,{RH,ambientT:Tamb}).flux;
+    }
+    // jet fire
+    if(s.fireType==='jet' && s.phase==='gas'){
+      out.fire.jet={mdot,Hc:c.Hc,radFrac:s.radFrac};
+      out.fire.jetFlux=(L)=>QRA.jetFireRadiation({mdot,Hc:c.Hc,radFrac:s.radFrac,RH,ambientT:Tamb},L).flux;
+    }
+    // BLEVE (pressurised liquefied gas)
+    if(s.fireType==='bleve' || (s.phase==='liquid' && T>c.Tb)){
+      const mass=s.invMass;
+      const bl=QRA.bleve({mass,Hc:c.Hc,radFrac:s.radFrac<0.25?0.3:s.radFrac,RH,ambientT:Tamb},1);
+      out.fire.bleve=bl; out.fire.bleveMass=mass;
+      out.fire.bleveFlux=(L)=>QRA.bleve({mass,Hc:c.Hc,radFrac:0.3,RH,ambientT:Tamb},L).flux;
+    }
+    // thermal endpoint distances
+    out.fire.thermal=[];
+    const fluxFn = out.fire.jetFlux || out.fire.poolFlux || out.fire.bleveFlux;
+    if(fluxFn){
+      for(const ep of QRA.THERMAL_ENDPOINTS){
+        out.fire.thermal.push({...ep,distance:solveDistance(fluxFn,ep.flux,0.5,5000)});
+      }
+    }
+    out.fire.fluxFnName = out.fire.jetFlux?'jet':(out.fire.bleveFlux?'bleve':(out.fire.poolFlux?'pool':null));
+  }
+
+  /* ---- EXPLOSION (VCE) ---- */
+  if(c.flammable){
+    // flammable mass in cloud: fraction of release within flammable limits (screening: use airborne inventory or user congest vol)
+    let cloudMass;
+    if(s.releaseType==='instantaneous'){ cloudMass=s.invMass*s.vceFraction; }
+    else { cloudMass=airborne*Math.min(s.dur,30)*s.vceFraction*3; } // heuristic: mass accumulated * participating fraction
+    cloudMass=Math.max(cloudMass, s.invMass*0.02*s.vceFraction); // floor
+    out.explosion.cloudMass=cloudMass;
+    const E=cloudMass*c.Hc; out.explosion.energy=E;
+    out.explosion.method=s.vceMethod;
+    if(s.vceMethod==='purple'){
+      // Purple Book mandated simplified ME (class 10, f_obstr): two contours
+      const pv=QRA.purpleVCE({cloudMass,Hc:c.Hc,fObstr:s.fObstr});
+      out.explosion.purple=pv;
+      out.explosion.tno=[
+        {op_kpa:30,label:'30 kPa (0.3 barg) — 100% lethality contour',distance:pv.R_0_3bar},
+        {op_kpa:10,label:'10 kPa (0.1 barg) — 2.5% indoor lethality contour',distance:pv.R_0_1bar}
+      ];
+      out.explosion.tnoClass=10;
+    }
+    if(s.vceMethod==='tno'||s.vceMethod==='both'){
+      out.explosion.tno=[];
+      for(const ep of QRA.OVERPRESSURE_ENDPOINTS){
+        out.explosion.tno.push({...ep,distance:QRA.tnoDistanceToOverpressure({E,cls:s.tnoClass},ep.op_kpa*1000)});
+      }
+      out.explosion.tnoClass=s.tnoClass;
+    }
+    if(s.vceMethod==='tnt'||s.vceMethod==='both'){
+      out.explosion.tnt=[];
+      for(const ep of QRA.OVERPRESSURE_ENDPOINTS){
+        out.explosion.tnt.push({...ep,distance:QRA.tntDistanceToOverpressure({mass:cloudMass,Hc:c.Hc,eff:s.tntEff},ep.op_kpa*1000)});
+      }
+      out.explosion.tntMass=s.tntEff*cloudMass*c.Hc/4.68e6;
+    }
+  }
+
+  /* ---- warnings ---- */
+  if(s.phase==='gas'&&s.P<0.5)out.warnings.push('Low pressure gas release — choked-flow assumption may not hold; check discharge regime.');
+  if(dense&&qo===0)out.warnings.push('Dense gas detected but no airborne rate computed — check release inputs.');
+  if(c.name.includes('Fluoride'))out.warnings.push('HF shows strong non-ideal (association) behaviour; standard dense-gas correlations under-predict — use a dedicated HF model for a real safety case.');
+  if(out.explosion.cloudMass && s.congestVol===0 && (s.vceMethod!=='tnt'))out.warnings.push('TNO Multi-Energy requires a defined congested/confined region — cloud mass here is a screening estimate; refine with an actual congestion assessment.');
+
+  out.summary=buildSummary(out);
+  PROJ.result=out; save();
+  return out;
+}
+
+/* unit helpers */
+function ppmToMassFrac(ppm,MWgas,MWair){ const vf=ppm/1e6; return vf*MWgas/(vf*MWgas+(1-vf)*MWair); }
+function ppmVolToKgm3(ppm,MW,T){ const vf=ppm/1e6; const molPerM3=QRA.P_ATM/(QRA.R_GAS*T); return vf*molPerM3*(MW/1000); }
+function ppmVolToRatio(ppm){ return ppm/1e6; }
+function clampRatio(r){ return QRA.clamp(r,0.002,0.10); }
+function solveDistance(fn,target,lo,hi){
+  // fn decreasing in L; find L where fn(L)=target
+  if(fn(lo)<target) return null; // even at close range below target (shouldn't happen for thermal)
+  if(fn(hi)>target){ // extend
+    hi*=4; if(fn(hi)>target) return hi;
+  }
+  for(let i=0;i<160;i++){const mid=Math.sqrt(lo*hi); if(fn(mid)>target)lo=mid;else hi=mid;}
+  return Math.sqrt(lo*hi);
+}
+function buildSummary(out){
+  const s=[];
+  const disp=out.dispersion.targets||[];
+  const lfl=disp.find(d=>d.key==='LFL');
+  if(lfl&&lfl.distance)s.push({k:'Flammable extent (LFL)',v:lfl.distance,u:'m',cls:'z2'});
+  const erpg3=disp.find(d=>d.key==='ERPG-3'); const idlh=disp.find(d=>d.key==='IDLH');
+  if(erpg3&&erpg3.distance)s.push({k:'Toxic — ERPG-3',v:erpg3.distance,u:'m',cls:'z1'});
+  else if(idlh&&idlh.distance)s.push({k:'Toxic — IDLH',v:idlh.distance,u:'m',cls:'z1'});
+  const th=(out.fire.thermal||[]).find(t=>t.flux===12.5);
+  if(th&&th.distance)s.push({k:'12.5 kW/m² thermal',v:th.distance,u:'m',cls:'z2'});
+  const expl=(out.explosion.tno||out.explosion.tnt||[]);
+  const tn=expl.find(t=>t.op_kpa===6.9)||expl.find(t=>t.op_kpa===10)||expl.find(t=>t.distance);
+  if(tn&&tn.distance)s.push({k:tn.op_kpa+' kPa overpressure',v:tn.distance,u:'m',cls:'z3'});
+  return s;
+}
+</script>
+<script>
+/* ==========================================================================
+   UI LAYER — tabs, forms, results, plots, calculators, chem editor, AI
+   ========================================================================== */
+let CURTAB='scenario';
+const APP=()=>$('#app');
+
+function switchTab(t){
+  CURTAB=t;
+  $$('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  render();
+}
+function render(){
+  const r={scenario:renderScenario,results:renderResults,compare:renderCompare,calc:renderCalc,chem:renderChem,ai:renderAI,methods:renderMethods}[CURTAB];
+  APP().innerHTML=r?r():'';
+  const post={scenario:postScenario,results:postResults,compare:postCompare,calc:postCalc,chem:postChem,ai:postAI}[CURTAB];
+  if(post)post();
+}
+
+/* ---------------- SCENARIO WIZARD ---------------- */
+let WIZ=1; const WIZ_STEPS=['Material','Release','Weather','Fire & VCE'];
+function chemOptions(sel){return Object.keys(DB.chem).map(k=>`<option value="${k}" ${k===sel?'selected':''}>${esc(DB.chem[k].name)}</option>`).join('');}
+function stepper(){return `<div class="stepper">${WIZ_STEPS.map((t,i)=>`<div class="step ${i+1===WIZ?'active':i+1<WIZ?'done':''}">${esc(t)}</div>`).join('')}</div>`;}
+function tip(t){return `<span class="cite" title="${esc(t)}">ⓘ</span>`;}
+
+function renderScenario(){
+  const s=PROJ.scenario, c=chem(s.chem);
+  let body='';
+  if(WIZ===1){
+    body=`<div class="grid g2">
+      <div class="card"><h3>Study details</h3>
+        <div class="field"><label>Study name</label><input id="m_name" value="${esc(PROJ.meta.name)}"></div>
+        <div class="row"><div class="field"><label>Facility / unit</label><input id="m_fac" value="${esc(PROJ.meta.facility)}"></div>
+        <div class="field"><label>Analyst</label><input id="m_analyst" value="${esc(PROJ.meta.analyst)}"></div></div>
+        <div class="field"><label>Date</label><input id="m_date" type="date" value="${esc(PROJ.meta.date)}"></div>
+        <div class="field"><label>Scenario notes</label><textarea id="m_notes" rows="2">${esc(PROJ.meta.notes)}</textarea></div>
+      </div>
+      <div class="card"><h3>Material</h3>
+        <div class="field"><label>Chemical (25 in TNO-grounded database)</label><select id="s_chem">${chemOptions(s.chem)}</select></div>
+        <div class="field"><label>Stored phase</label><select id="s_phase">
+          <option value="gas" ${s.phase==='gas'?'selected':''}>Gas / vapour</option>
+          <option value="liquid" ${s.phase==='liquid'?'selected':''}>Liquid (incl. pressurised liquefied)</option></select></div>
+        <div class="banner ${c.toxic&&c.flammable?'warn':c.toxic?'warn':'info'}" style="margin-top:10px">
+          ${c.flammable?'<span class="tag red">Flammable</span> ':''}${c.toxic?'<span class="tag yel">Toxic</span> ':''}
+          ${c.toxKey?'<span class="tag blue">TNO probit</span> ':''}${c.react?'<span class="tag">'+c.react+'-reactivity</span>':''}
+          <div style="margin-top:6px">${esc(c.note||'')}</div></div>
+        <div class="kv" style="margin-top:10px"><div class="k">MW</div><div class="val">${c.MW} g/mol</div>
+          <div class="k">Boiling pt</div><div class="val">${fmt(c.Tb-273.15,0)} °C</div>
+          <div class="k">ΔHc</div><div class="val">${c.Hc?fmt(c.Hc/1e6,1)+' MJ/kg':'—'}</div>
+          <div class="k">LFL / UFL</div><div class="val">${c.flammable?c.LFL+' / '+c.UFL+' %':'—'}</div></div>
+      </div></div>`;
+  } else if(WIZ===2){
+    const locCards=QRA.LOC_SCENARIOS.map(l=>`<div class="preset-card ${s.loc===l.id?'sel':''}" data-loc="${l.id}"><div class="t">${esc(l.label)}</div><div class="d">${esc(l.note)}</div></div>`).join('');
+    body=`<div class="grid g2">
+      <div class="card"><h3>Standard LOC scenario ${tip('Purple Book (CPR 18E) Ch.3 standard loss-of-containment scenarios')}</h3>
+        <p class="help">Pick a Purple Book standard case — it sets the release mode, hole size and duration for you.</p>
+        <div class="grid" style="gap:8px">${locCards}</div></div>
+      <div class="card"><h3>Release conditions</h3>
+        <div class="row"><div class="field"><label>Release mode</label><select id="s_rt">
+          <option value="continuous" ${s.releaseType==='continuous'?'selected':''}>Continuous</option>
+          <option value="instantaneous" ${s.releaseType==='instantaneous'?'selected':''}>Instantaneous</option></select></div>
+          <div class="field"><label>Hole diameter (mm)</label><input id="s_hole" type="number" value="${s.holeD}"></div></div>
+        <div class="row"><div class="field"><label>Storage pressure (barg)</label><input id="s_P" type="number" step="0.1" value="${s.P}"></div>
+          <div class="field"><label>Storage temp (°C)</label><input id="s_T" type="number" value="${s.T}"></div></div>
+        <div class="row"><div class="field"><label>Discharge Cd ${tip('Purple Book: 0.62 sharp orifice / leak, 1.0 full-bore rupture')}</label><input id="s_Cd" type="number" step="0.01" value="${s.Cd}"></div>
+          <div class="field"><label>Inventory (kg)</label><input id="s_inv" type="number" value="${s.invMass}"></div></div>
+        <div class="row"><div class="field"><label>Liquid head (m)</label><input id="s_head" type="number" step="0.1" value="${s.head}"></div>
+          <div class="field"><label>Release duration (s) ${tip('Purple Book caps release contribution at 1800 s (30 min)')}</label><input id="s_dur" type="number" value="${s.dur}"></div></div>
+      </div></div>`;
+  } else if(WIZ===3){
+    const wxCards=QRA.WEATHER_CLASSES.map(w=>`<div class="preset-card ${(s.stab===w.stab&&Math.abs(s.wind-w.wind)<0.01)?'sel':''}" data-wx="${w.id}"><div class="t">${w.id}</div><div class="d">${esc(w.label)}</div></div>`).join('');
+    body=`<div class="grid g2">
+      <div class="card"><h3>Standard weather class ${tip('Purple Book §4.10 — six mandated Pasquill/wind classes for a QRA')}</h3>
+        <p class="help">Dutch QRA requires these six classes. F/1.5 usually gives the worst toxic/flammable reach; D/5 is the neutral reference.</p>
+        <div class="grid g2" style="gap:8px">${wxCards}</div></div>
+      <div class="card"><h3>Atmosphere</h3>
+        <div class="row"><div class="field"><label>Wind @10 m (m/s)</label><input id="s_wind" type="number" step="0.1" value="${s.wind}"></div>
+          <div class="field"><label>Pasquill stability</label><select id="s_stab">${['A','B','C','D','E','F'].map(x=>`<option ${x===s.stab?'selected':''}>${x}</option>`).join('')}</select></div></div>
+        <div class="row"><div class="field"><label>Terrain</label><select id="s_terr">
+          <option value="rural" ${s.terrain==='rural'?'selected':''}>Rural / open</option>
+          <option value="urban" ${s.terrain==='urban'?'selected':''}>Urban / industrial</option></select></div>
+          <div class="field"><label>Ambient temp (°C) ${tip('Purple Book default 9 °C (282 K)')}</label><input id="s_Tamb" type="number" value="${s.Tamb}"></div></div>
+        <div class="field"><label>Relative humidity (%) ${tip('Purple Book default 83%; drives Bagster transmissivity')}</label><input id="s_RH" type="number" value="${s.RH}"></div>
+        <button class="btn sm ghost" id="tnoAtm">Reset atmosphere to TNO defaults</button>
+      </div></div>`;
+  } else {
+    body=`<div class="grid g2">
+      <div class="card"><h3>Fire ${tip('Yellow Book Ch.6 — pool (Table 6.5 burn rates), jet (Fs Eq 6.59), BLEVE (Eq 6.90/6.91)')}</h3>
+        <div class="row"><div class="field"><label>Primary fire type</label><select id="s_fire">
+          <option value="jet" ${s.fireType==='jet'?'selected':''}>Jet fire</option>
+          <option value="pool" ${s.fireType==='pool'?'selected':''}>Pool fire</option>
+          <option value="bleve" ${s.fireType==='bleve'?'selected':''}>BLEVE / fireball</option>
+          <option value="none" ${s.fireType==='none'?'selected':''}>None</option></select></div>
+          <div class="field"><label>Radiant fraction</label><input id="s_rad" type="number" step="0.01" value="${s.radFrac}"></div></div>
+        <div class="field"><label>Pool diameter (m, 0 = auto)</label><input id="s_pd" type="number" value="${s.poolDiam}"></div>
+        <p class="help">Pool burn rate & extinction use Yellow Book Table 6.5 values stored with each material.</p>
+      </div>
+      <div class="card"><h3>Explosion (VCE)</h3>
+        <div class="field"><label>Method</label><select id="s_vce">
+          <option value="purple" ${s.vceMethod==='purple'?'selected':''}>Purple Book simplified ME (mandated QRA)</option>
+          <option value="tno" ${s.vceMethod==='tno'?'selected':''}>TNO Multi-Energy (full curves, class 1–10)</option>
+          <option value="tnt" ${s.vceMethod==='tnt'?'selected':''}>TNT equivalency</option>
+          <option value="both" ${s.vceMethod==='both'?'selected':''}>TNO + TNT (cross-check)</option></select></div>
+        <div class="row"><div class="field"><label>Obstructed fraction f_obstr ${tip('Purple Book §4.8 default 0.08')}</label><input id="s_fo" type="number" step="0.01" value="${s.fObstr}"></div>
+          <div class="field"><label>ME blast strength (full-ME)</label><input id="s_cls" type="number" min="1" max="10" value="${s.tnoClass}"></div></div>
+        <div class="row"><div class="field"><label>Cloud participating fraction</label><input id="s_vf" type="number" step="0.01" value="${s.vceFraction}"></div>
+          <div class="field"><label>TNT yield efficiency</label><input id="s_te" type="number" step="0.01" value="${s.tntEff}"></div></div>
+        <p class="help">Purple Book mandates class 10 for obstructed regions; cloud mass = mass within LFL contour.</p>
+      </div>
+      <div class="card"><h3>Vulnerability &amp; criteria</h3>
+        <div class="row"><div class="field"><label>Toxic probit set ${tip('Green Book Table 5.3 (conservative b=1) vs Purple Book Table 5.2 (QRA-mandated)')}</label><select id="s_tox">
+          <option value="pb" ${s.toxSet==='pb'?'selected':''}>Purple Book (CPR 18E) — QRA-mandated</option>
+          <option value="gb" ${s.toxSet==='gb'?'selected':''}>Green Book (CPR 16E) — conservative</option></select></div>
+          <div class="field"><label>Risk criteria profile</label><select id="s_crit">
+          <option value="uk" ${s.criteria==='uk'?'selected':''}>UK HSE (R2P2/ALARP)</option>
+          <option value="gcc" ${s.criteria==='gcc'?'selected':''}>GCC operator screening</option></select></div></div>
+      </div></div>`;
+  }
+  return `${stepper()}${body}
+  <div class="wizbtns">
+    <button class="btn ghost" id="wizPrev" ${WIZ===1?'disabled style=opacity:.4':''}>← Back</button>
+    <div class="inline">
+      ${WIZ<4?'<button class="btn primary" id="wizNext">Next →</button>':'<button class="btn primary" id="btnRun" style="padding:9px 30px">▶ Run consequence analysis</button>'}
+    </div>
+  </div>`;
+}
+function postScenario(){
+  const bind=(id,path)=>{const el=$('#'+id); if(!el)return; el.addEventListener('input',()=>{setPath(path,el.type==='number'?parseFloat(el.value):el.value); save();});};
+  bind('m_name','meta.name');bind('m_fac','meta.facility');bind('m_analyst','meta.analyst');bind('m_date','meta.date');bind('m_notes','meta.notes');
+  const sb=(id,key,num)=>{const el=$('#'+id);if(!el)return;el.addEventListener('input',()=>{PROJ.scenario[key]=num?parseFloat(el.value):el.value;save();if(key==='chem'||key==='vceMethod'||key==='fireType')render();});};
+  sb('s_chem','chem');sb('s_phase','phase');sb('s_rt','releaseType');sb('s_hole','holeD',1);sb('s_P','P',1);sb('s_T','T',1);
+  sb('s_Cd','Cd',1);sb('s_inv','invMass',1);sb('s_head','head',1);sb('s_dur','dur',1);sb('s_wind','wind',1);sb('s_stab','stab');
+  sb('s_terr','terrain');sb('s_Tamb','Tamb',1);sb('s_RH','RH',1);sb('s_fire','fireType');sb('s_rad','radFrac',1);sb('s_pd','poolDiam',1);
+  sb('s_vce','vceMethod');sb('s_cls','tnoClass',1);sb('s_vf','vceFraction',1);sb('s_te','tntEff',1);sb('s_crit','criteria');
+  sb('s_tox','toxSet');sb('s_fo','fObstr',1);
+  // LOC preset cards
+  $$('.preset-card[data-loc]').forEach(el=>el.onclick=()=>{applyLOC(el.dataset.loc);render();});
+  // weather preset cards
+  $$('.preset-card[data-wx]').forEach(el=>el.onclick=()=>{const w=QRA.WEATHER_CLASSES.find(x=>x.id===el.dataset.wx);PROJ.scenario.stab=w.stab;PROJ.scenario.wind=w.wind;save();render();});
+  if($('#tnoAtm'))$('#tnoAtm').onclick=()=>{const d=QRA.TNO_DEFAULTS;PROJ.scenario.Tamb=d.Tamb;PROJ.scenario.RH=d.RH;save();render();};
+  if($('#wizPrev'))$('#wizPrev').onclick=()=>{if(WIZ>1){WIZ--;render();}};
+  if($('#wizNext'))$('#wizNext').onclick=()=>{if(WIZ<4){WIZ++;render();}};
+  if($('#btnRun'))$('#btnRun').onclick=()=>{try{runScenario();switchTab('results');}catch(e){alert('Calculation error: '+e.message);console.error(e);}};
+}
+function applyLOC(id){
+  const l=QRA.LOC_SCENARIOS.find(x=>x.id===id); if(!l)return; const s=PROJ.scenario; s.loc=id;
+  s.releaseType=l.releaseType;
+  if(l.hole)s.holeD=l.hole;
+  if(l.dur)s.dur=l.dur;
+  if(l.fullbore)s.Cd=1.0; else s.Cd=0.62;
+  if(id==='G1')s.releaseType='instantaneous';
+  save();
+}
+function setPath(path,val){const p=path.split('.');let o=PROJ;for(let i=0;i<p.length-1;i++)o=o[p[i]];o[p[p.length-1]]=val;}
+
+/* ---------------- RESULTS ---------------- */
+function renderResults(){
+  const out=PROJ.result;
+  if(!out)return `<div class="card"><p class="muted">No results yet. Configure a scenario and click <b>Run consequence analysis</b>.</p></div>`;
+  const c=out.chem,s=out.inputs;
+  const summary=out.summary.map(x=>`<div class="stat"><div class="v" style="color:var(--${x.cls})">${fmt(x.v,0)}<span class="u"> ${x.u}</span></div><div class="l">${esc(x.k)}</div></div>`).join('');
+  const warn=out.warnings.length?`<div class="banner warn">⚠ ${out.warnings.map(esc).join('<br>⚠ ')}</div>`:'';
+  return `
+  ${warn}
+  <div class="banner info"><b>${esc(c.name)}</b> · ${esc(s.phase)} · ${esc(s.releaseType)} release · ${esc(s.holeD)} mm hole · ${esc(s.P)} barg / ${esc(s.T)} °C · weather ${esc(s.stab)}/${esc(s.wind)} m/s · ${esc(CRITERIA[s.criteria].name)}</div>
+  <div class="grid g4" style="margin-bottom:16px">${summary||'<div class="stat"><div class="v">—</div><div class="l">No dominant hazard distance</div></div>'}</div>
+  <div class="grid g2">
+    <div class="card"><h3>Hazard footprint (plan view)</h3>
+      <div class="pill-row" id="plotPills"></div>
+      <canvas id="plot" width="640" height="480"></canvas>
+      <p class="help">Concentric hazard zones centred on the release. Toggle overlays above. Distances are downwind (dispersion) or radial (fire/explosion).</p>
+    </div>
+    <div class="card"><h3>Source term ${cite("flash")}</h3>${renderSource(out)}</div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Dispersion — flammable &amp; toxic distances ${cite(out.dispersion.dense?"britterMcQuaid":"gaussian")}</h3>${renderDisp(out)}</div>
+    <div class="card"><h3>Effect zones summary</h3>${renderZones(out)}</div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Fire — thermal radiation ${cite(out.fire.fluxFnName==="bleve"?"bleve":out.fire.fluxFnName==="jet"?"jetFire":"poolFire")}</h3>${renderFire(out)}</div>
+    <div class="card"><h3>Explosion — overpressure (VCE) ${cite(out.explosion.method==="purple"?"purpleVCE":"tno")}</h3>${renderExpl(out)}</div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Vulnerability &amp; risk criteria</h3>${renderVuln(out)}</div>
+  <div style="text-align:center;margin-top:16px">
+    <button class="btn primary" id="toSave">＋ Save to comparison</button>
+    <button class="btn" id="toAI">→ Send to AI reviewer</button>
+    <button class="btn" id="toPrint">🖨 Printable report</button>
+  </div>`;
+}
+function snapshotForCompare(out){
+  const g=(arr,pred)=>{const x=(arr||[]).find(pred);return x&&x.distance?x.distance:null;};
+  const disp=out.dispersion.targets||[];
+  return {
+    name:(out.chem.name)+' · '+out.inputs.holeD+'mm · '+out.inputs.stab+'/'+out.inputs.wind,
+    chem:out.chem.name, hole:out.inputs.holeD, wx:out.inputs.stab+'/'+out.inputs.wind,
+    mdot:out.source.mdot, airborne:out.source.airborne,
+    lfl:g(disp,d=>d.key==='LFL'), erpg3:g(disp,d=>d.key==='ERPG-3'), idlh:g(disp,d=>d.key==='IDLH'),
+    th125:g(out.fire.thermal,t=>t.flux===12.5), th375:g(out.fire.thermal,t=>t.flux===37.5),
+    op30:g(out.explosion.tno,t=>t.op_kpa===30||t.op_kpa===20.7), op10:g(out.explosion.tno,t=>t.op_kpa===10||t.op_kpa===6.9)
+  };
+}
+function renderSource(out){
+  const sc=out.source, c=out.chem;
+  let rows=`<div class="kv">
+    <div class="k">Total discharge rate</div><div class="val">${fmt(sc.mdot)} kg/s</div>
+    <div class="k">Release phase</div><div class="val">${esc(sc.releasePhase)}</div>
+    <div class="k">Airborne (vapour) rate</div><div class="val">${fmt(sc.airborne)} kg/s</div>`;
+  if(sc.gas)rows+=`<div class="k">Flow regime</div><div class="val">${sc.gas.choked?'choked / sonic':'subsonic'}</div>`;
+  if(sc.flash)rows+=`<div class="k">Flash fraction</div><div class="val">${fmt(sc.flash.flashFraction*100,1)} %</div>
+    <div class="k">Airborne (flash+aerosol)</div><div class="val">${fmt(sc.flash.airborneFraction*100,1)} %</div>
+    <div class="k">Rainout to pool</div><div class="val">${fmt(sc.flash.rainoutToPool*100,1)} %</div>`;
+  if(sc.poolEvap)rows+=`<div class="k">Pool evaporation regime</div><div class="val">${esc(sc.poolEvap.regime)}</div>
+    <div class="k">Pool evap. rate</div><div class="val">${fmt(sc.poolEvap.rate)} kg/s</div>
+    <div class="k">Pool area (est.)</div><div class="val">${fmt(sc.poolArea,0)} m²</div>`;
+  rows+=`</div>`;
+  return rows;
+}
+function renderDisp(out){
+  const d=out.dispersion;
+  if(!d.targets||!d.targets.length)return '<p class="muted">No dispersion targets (material not flammable/toxic or no airborne release).</p>';
+  const rows=d.targets.map(t=>`<tr><td>${esc(t.label)}</td><td class="num">${fmt(t.ppm,0)} ppm</td><td class="num">${t.distance?fmt(t.distance,0)+' m':'—'}</td><td><small>${esc(t.model||'')}</small></td></tr>`).join('');
+  return `<p class="help">${d.dense?'<span class="tag yel">Dense gas</span> ρ<sub>gas</sub>='+fmt(d.rhoGas,2)+' kg/m³ — Britter-McQuaid used.':'<span class="tag blue">Neutral/buoyant</span> — Gaussian P-G used.'}</p>
+  <div class="scroll"><table><thead><tr><th>Concentration target</th><th class="num">Conc.</th><th class="num">Downwind dist.</th><th>Model</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderZones(out){
+  const items=[];
+  const push=(lbl,dist,color)=>{if(dist)items.push({lbl,dist,color});};
+  const disp=out.dispersion.targets||[];
+  const lfl=disp.find(x=>x.key==='LFL'); if(lfl)push('Flammable cloud (LFL)',lfl.distance,'var(--z2)');
+  const e3=disp.find(x=>x.key==='ERPG-3'); if(e3)push('Toxic ERPG-3 (life-threatening)',e3.distance,'var(--z1)');
+  const idlh=disp.find(x=>x.key==='IDLH'); if(idlh)push('Toxic IDLH',idlh.distance,'var(--z1)');
+  (out.fire.thermal||[]).forEach(t=>push(t.label,t.distance, t.flux>=12.5?'var(--z1)':t.flux>=4.7?'var(--z2)':'var(--z3)'));
+  const expl=out.explosion.tno||out.explosion.tnt||[];
+  expl.forEach(t=>push(t.label,t.distance, t.op_kpa>=20?'var(--z1)':t.op_kpa>=6.9?'var(--z2)':'var(--z3)'));
+  if(!items.length)return '<p class="muted">No effect zones computed.</p>';
+  items.sort((a,b)=>b.dist-a.dist);
+  return `<div class="zones">${items.map(i=>`<div class="zone-item" style="border-left-color:${i.color}"><span class="sw" style="background:${i.color}"></span><span class="lbl">${esc(i.lbl)}</span><span class="dist">${fmt(i.dist,0)} m</span></div>`).join('')}</div>`;
+}
+function renderFire(out){
+  const f=out.fire;
+  if(!f.thermal||!f.thermal.length)return '<p class="muted">No fire scenario (material not flammable or fire type = none).</p>';
+  let head='';
+  if(f.jet)head=`<p class="help"><span class="tag red">Jet fire</span> API 521 point-source · ṁ=${fmt(f.jet.mdot)} kg/s · radiant fraction ${f.jet.radFrac}</p>`;
+  else if(f.bleve)head=`<p class="help"><span class="tag red">BLEVE</span> fireball Ø=${fmt(f.bleve.fireballDiameter,0)} m · duration ${fmt(f.bleve.duration,1)} s · SEP ${fmt(f.bleve.sep,0)} kW/m²</p>`;
+  else if(f.pool)head=`<p class="help"><span class="tag red">Pool fire</span> Ø=${fmt(f.pool.diameter,1)} m · flame H=${fmt(f.pool.flameHeight,1)} m · SEP ${fmt(f.pool.sep,0)} kW/m²</p>`;
+  const rows=f.thermal.map(t=>`<tr><td>${esc(t.label)}</td><td class="num">${t.flux} kW/m²</td><td class="num">${t.distance?fmt(t.distance,0)+' m':'—'}</td></tr>`).join('');
+  return head+`<div class="scroll"><table><thead><tr><th>Endpoint</th><th class="num">Flux</th><th class="num">Distance</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderExpl(out){
+  const e=out.explosion;
+  if(!e.tno&&!e.tnt)return '<p class="muted">No VCE scenario (material not flammable or no cloud).</p>';
+  let head=`<p class="help">Cloud mass (screening) ${fmt(e.cloudMass,0)} kg · combustion energy ${fmt(e.energy/1e9,2)} GJ`;
+  if(e.method==='purple')head+=` · <span class="tag yel">Purple Book simplified ME (class 10, f_obstr ${e.purple.fObstr})</span>`;
+  else if(e.tno)head+=` · <span class="tag yel">TNO ME class ${e.tnoClass}</span>`;
+  if(e.tnt)head+=` · <span class="tag blue">TNT ${fmt(e.tntMass,0)} kg</span>`;
+  head+='</p>';
+  let rows;
+  if(e.method==='purple'){
+    rows=e.tno.map(t=>`<tr><td>${esc(t.label)}</td><td class="num">${t.distance?fmt(t.distance,0)+' m':'—'}</td></tr>`).join('');
+    return head+`<div class="scroll"><table><thead><tr><th>Overpressure contour</th><th class="num">Distance</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  const hdr=`<tr><th>Overpressure endpoint</th>${e.tno?'<th class="num">TNO ME</th>':''}${e.tnt?'<th class="num">TNT</th>':''}</tr>`;
+  const eps=QRA.OVERPRESSURE_ENDPOINTS;
+  rows=eps.map((ep,i)=>{
+    const tno=e.tno?e.tno[i]:null, tnt=e.tnt?e.tnt[i]:null;
+    return `<tr><td>${esc(ep.label)}</td>${e.tno?`<td class="num">${tno&&tno.distance?fmt(tno.distance,0)+' m':'—'}</td>`:''}${e.tnt?`<td class="num">${tnt&&tnt.distance?fmt(tnt.distance,0)+' m':'—'}</td>`:''}</tr>`;
+  }).join('');
+  return head+`<div class="scroll"><table><thead>${hdr}</thead><tbody>${rows}</tbody></table></div>`;
+}
+function cite(key){const c=QRA.CITES[key];if(!c)return '';return `<span class="cite" title="${esc(c.m)} — ${esc(c.src)}">ⓘ</span>`;}
+function renderVuln(out){
+  const c=out.chem, crit=CRITERIA[out.inputs.criteria], set=out.inputs.toxSet||'pb';
+  const T=out.inputs.Tamb+273.15;
+  let tox='';
+  if(c.toxic&&c.toxKey&&QRA.TOXPROBITS[c.toxKey]){
+    const dur=Math.min(out.inputs.dur/60,30); // Purple Book caps toxic exposure at 30 min
+    const conc=[c.idlh,c.erpg3,c.erpg3?c.erpg3*3:null].filter(Boolean);
+    const rows=conc.map(cc=>{
+      const mg=QRA.ppmToMgm3(cc,c.MW,T);
+      const p=QRA.toxicProbit(c.toxKey,mg,dur,set);
+      return `<tr><td class="num">${fmt(cc,0)} ppm</td><td class="num">${fmt(mg,0)} mg/m³</td><td class="num">${fmt(dur,0)} min</td><td class="num">${fmt(p.Y,2)}</td><td class="num">${fmt(p.fraction*100,1)} %</td></tr>`;
+    }).join('');
+    const rec=QRA.TOXPROBITS[c.toxKey], pp=rec[set];
+    tox=`<h4>Toxic lethality — ${esc(rec.label)} ${cite('probitTox')}</h4>
+      <p class="help">Probit set: <b>${set==='gb'?'Green Book (CPR 16E)':'Purple Book (CPR 18E)'}</b> · Pr = ${pp.a} + ${pp.b}·ln(C<sup>${pp.n}</sup>·t), C in mg/m³, t in min (exposure capped 30 min per Purple Book).</p>
+      <div class="scroll"><table><thead><tr><th class="num">Conc.</th><th class="num">= mg/m³</th><th class="num">Exposure</th><th class="num">Probit Y</th><th class="num">Fatality</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } else if(c.toxic){
+    tox=`<p class="help muted">Toxic material — no TNO probit assigned; set a probit key on the Chemicals tab to compute lethality.</p>`;
+  }
+  // Purple Book lethality bands reference
+  const lethRef=`<h4 style="margin-top:14px">TNO Purple Book lethality bands ${cite('probitOver')}</h4>
+    <div class="kv" style="grid-template-columns:auto 1fr">
+      <div class="k">Flash fire</div><div>100% lethality inside LFL contour; ~0 outside</div>
+      <div class="k">Thermal ≥ 35 kW/m²</div><div>100% (building ignition indoors; clothing factor 0.14 outdoors below 35)</div>
+      <div class="k">Overpressure &gt; 0.3 barg</div><div>100% lethality</div>
+      <div class="k">Overpressure 0.1–0.3 barg</div><div>2.5% indoors, 0 outdoors</div>
+    </div>`;
+  const irRows=crit.ir.map(r=>`<tr><td class="num">${r.v.toExponential(0)} /yr</td><td>${esc(r.l)}</td><td><span class="tag ${r.band==='broadly'?'grn':r.band==='intolerable'?'red':'yel'}">${esc(r.band)}</span></td></tr>`).join('');
+  return `${tox}${lethRef}
+    <h4 style="margin-top:14px">Risk-tolerability reference — ${esc(crit.name)}</h4>
+    <div class="scroll"><table><thead><tr><th class="num">Individual risk</th><th>Interpretation</th><th>Band</th></tr></thead><tbody>${irRows}</tbody></table></div>
+    <p class="help">${esc(crit.note)} This studio computes <b>consequences</b>; individual/societal risk requires event frequencies and event-tree branch probabilities (phase-2 QRA layer).</p>`;
+}
+
+/* ---- canvas plot ---- */
+let PLOT_STATE={};
+function postResults(){
+  const out=PROJ.result; if(!out)return;
+  // gather zones
+  const zones=[];
+  const disp=out.dispersion.targets||[];
+  disp.forEach(t=>{if(t.distance)zones.push({group:'disp',label:t.key,dist:t.distance,color:t.key==='LFL'?'#ff7a45':t.key==='½LFL'?'#ffa06b':'#f85149'});});
+  (out.fire.thermal||[]).forEach(t=>{if(t.distance)zones.push({group:'fire',label:t.flux+' kW/m²',dist:t.distance,color:t.flux>=12.5?'#f85149':t.flux>=4.7?'#ff7a45':'#e3b341'});});
+  const expl=out.explosion.tno||out.explosion.tnt||[];
+  expl.forEach(t=>{if(t.distance)zones.push({group:'expl',label:t.op_kpa+' kPa',dist:t.distance,color:t.op_kpa>=20?'#a371f7':t.op_kpa>=6.9?'#4c9aff':'#79c0ff'});});
+  PLOT_STATE={zones,show:{disp:true,fire:true,expl:true}};
+  const pills=$('#plotPills');
+  if(pills){pills.innerHTML=['disp','fire','expl'].map(g=>`<span class="pill active" data-g="${g}">${g==='disp'?'Dispersion':g==='fire'?'Fire':'Explosion'}</span>`).join('');
+    $$('.pill',pills).forEach(p=>p.onclick=()=>{const g=p.dataset.g;PLOT_STATE.show[g]=!PLOT_STATE.show[g];p.classList.toggle('active');drawPlot();});}
+  drawPlot();
+  if($('#toAI'))$('#toAI').onclick=()=>switchTab('ai');
+  if($('#toPrint'))$('#toPrint').onclick=printReport;
+  if($('#toSave'))$('#toSave').onclick=()=>{PROJ.comparison.push(snapshotForCompare(out));save();switchTab('compare');};
+}
+
+/* ---------------- COMPARISON ---------------- */
+function renderCompare(){
+  const rows=PROJ.comparison;
+  if(!rows.length)return `<div class="card"><p class="muted">No saved cases yet. Run a scenario, then click <b>＋ Save to comparison</b> on the Results tab to add it here. Compare release sizes, weather classes, or materials side-by-side.</p></div>`;
+  const metric=(lbl,key,unit)=>`<tr><td>${lbl}</td>${rows.map(r=>`<td class="num">${r[key]!=null?fmt(r[key],key==='mdot'||key==='airborne'?2:0)+(unit?' '+unit:''):'—'}</td>`).join('')}</tr>`;
+  return `<div class="banner info">Side-by-side comparison of ${rows.length} saved case${rows.length>1?'s':''}. Distances in metres unless noted.</div>
+  <div class="card pad0"><div class="scroll"><table>
+    <thead><tr><th>Metric</th>${rows.map((r,i)=>`<th class="num">Case ${i+1}<br><small>${esc(r.chem)}</small><br><button class="btn sm danger" data-del="${i}">✕</button></th>`).join('')}</tr></thead>
+    <tbody>
+      <tr><td>Configuration</td>${rows.map(r=>`<td class="num"><small>${esc(r.hole)}mm · ${esc(r.wx)}</small></td>`).join('')}</tr>
+      ${metric('Discharge rate','mdot','kg/s')}
+      ${metric('Airborne rate','airborne','kg/s')}
+      ${metric('Flammable LFL','lfl')}
+      ${metric('Toxic ERPG-3','erpg3')}
+      ${metric('Toxic IDLH','idlh')}
+      ${metric('Thermal 37.5 kW/m²','th375')}
+      ${metric('Thermal 12.5 kW/m²','th125')}
+      ${metric('Overpressure (0.3 barg / 20.7 kPa)','op30')}
+      ${metric('Overpressure (0.1 barg / 6.9 kPa)','op10')}
+    </tbody></table></div></div>
+  <div style="margin-top:12px"><button class="btn ghost" id="cmpClear">Clear all</button>
+    <canvas id="cmpChart" width="900" height="340" style="margin-top:16px"></canvas></div>`;
+}
+function postCompare(){
+  $$('[data-del]').forEach(b=>b.onclick=()=>{PROJ.comparison.splice(+b.dataset.del,1);save();render();});
+  if($('#cmpClear'))$('#cmpClear').onclick=()=>{if(confirm('Clear all saved comparison cases?')){PROJ.comparison=[];save();render();}};
+  drawCompareChart();
+}
+function drawCompareChart(){
+  const cv=$('#cmpChart');if(!cv||!PROJ.comparison.length)return;const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,pad=50,rows=PROJ.comparison;
+  ctx.clearRect(0,0,W,H);
+  const metrics=[{k:'lfl',l:'LFL',c:'#ff7a45'},{k:'erpg3',l:'ERPG-3',c:'#f85149'},{k:'th125',l:'12.5kW',c:'#e3b341'},{k:'op10',l:'6.9kPa',c:'#4c9aff'}];
+  const maxV=Math.max(1,...rows.flatMap(r=>metrics.map(m=>r[m.k]||0)));
+  const groupW=(W-pad*2)/rows.length, barW=groupW/(metrics.length+1);
+  ctx.font='11px system-ui';ctx.fillStyle='#9aa7b4';ctx.textAlign='center';
+  rows.forEach((r,gi)=>{
+    const gx=pad+gi*groupW;
+    metrics.forEach((m,mi)=>{
+      const v=r[m.k]||0;const h=(v/maxV)*(H-pad*2);
+      const x=gx+mi*barW+barW*0.5;
+      ctx.fillStyle=m.c;ctx.fillRect(x,H-pad-h,barW*0.85,h);
+    });
+    ctx.fillStyle='#e6edf3';ctx.fillText('Case '+(gi+1),gx+groupW/2,H-pad+16);
+  });
+  // axis
+  ctx.strokeStyle='#2d3542';ctx.beginPath();ctx.moveTo(pad,H-pad);ctx.lineTo(W-pad,H-pad);ctx.stroke();
+  ctx.fillStyle='#6b7684';ctx.textAlign='right';ctx.fillText(fmt(maxV,0)+' m',pad-6,pad+4);
+  // legend
+  ctx.textAlign='left';let lx=pad;metrics.forEach(m=>{ctx.fillStyle=m.c;ctx.fillRect(lx,14,10,10);ctx.fillStyle='#e6edf3';ctx.fillText(m.l,lx+14,23);lx+=80;});
+}
+function drawPlot(){
+  const cv=$('#plot'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,cx=W/2,cy=H/2;
+  ctx.clearRect(0,0,W,H);
+  const zones=PLOT_STATE.zones.filter(z=>PLOT_STATE.show[z.group]);
+  const maxD=Math.max(10,...zones.map(z=>z.dist))*1.1;
+  const scale=(Math.min(W,H)/2-30)/maxD;
+  // grid rings
+  ctx.strokeStyle='rgba(255,255,255,.06)';ctx.fillStyle='#6b7684';ctx.font='10px monospace';ctx.textAlign='left';
+  const step=niceStep(maxD/4);
+  for(let d=step;d<=maxD;d+=step){ctx.beginPath();ctx.arc(cx,cy,d*scale,0,7);ctx.stroke();ctx.fillText(fmt(d,0)+' m',cx+4,cy-d*scale+2);}
+  // wind arrow
+  ctx.strokeStyle='#4c9aff';ctx.fillStyle='#4c9aff';ctx.beginPath();ctx.moveTo(20,20);ctx.lineTo(70,20);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(70,20);ctx.lineTo(63,16);ctx.lineTo(63,24);ctx.fill();ctx.fillText('wind',24,14);
+  // zones sorted large->small
+  const sorted=[...zones].sort((a,b)=>b.dist-a.dist);
+  sorted.forEach(z=>{
+    ctx.beginPath();ctx.arc(cx,cy,z.dist*scale,0,7);
+    ctx.fillStyle=hexA(z.color,.10);ctx.fill();
+    ctx.strokeStyle=z.color;ctx.lineWidth=1.6;ctx.stroke();
+  });
+  // release point
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,4,0,7);ctx.fill();
+  ctx.strokeStyle='#ff7a45';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,7,0,7);ctx.stroke();
+  // legend
+  ctx.textAlign='left';let ly=H-14-sorted.length*13;
+  sorted.forEach(z=>{ctx.fillStyle=z.color;ctx.fillRect(W-150,ly,10,10);ctx.fillStyle='#e6edf3';ctx.font='11px monospace';ctx.fillText(z.label+' · '+fmt(z.dist,0)+'m',W-135,ly+9);ly+=13;});
+}
+function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x)));const n=x/p;return (n<1.5?1:n<3.5?2:n<7.5?5:10)*p;}
+function hexA(hex,a){const h=hex.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return `rgba(${r},${g},${b},${a})`;}
+</script>
+<script>
+/* ---------------- STANDALONE CALCULATORS ---------------- */
+function renderCalc(){
+  return `<div class="banner info">Standalone model calculators — for spot checks and cross-validating other software. Each is independent of the scenario.</div>
+  <div class="grid g2">
+    <div class="card"><h3>Gas discharge (choked/subsonic)</h3>
+      <div class="row"><div class="field"><label>P₁ abs (bar)</label><input id="c_gP" type="number" value="10"></div>
+      <div class="field"><label>T (°C)</label><input id="c_gT" type="number" value="25"></div></div>
+      <div class="row"><div class="field"><label>MW (g/mol)</label><input id="c_gMW" type="number" value="44"></div>
+      <div class="field"><label>γ (Cp/Cv)</label><input id="c_gG" type="number" step="0.01" value="1.13"></div></div>
+      <div class="row"><div class="field"><label>Hole Ø (mm)</label><input id="c_gD" type="number" value="25"></div>
+      <div class="field"><label>Cd</label><input id="c_gCd" type="number" step="0.01" value="0.85"></div></div>
+      <button class="btn primary sm" onclick="calcGas()">Compute</button><div id="c_gO" class="aiout" style="margin-top:10px"></div></div>
+
+    <div class="card"><h3>Liquid discharge</h3>
+      <div class="row"><div class="field"><label>P₁ abs (bar)</label><input id="c_lP" type="number" value="3"></div>
+      <div class="field"><label>ρ (kg/m³)</label><input id="c_lR" type="number" value="800"></div></div>
+      <div class="row"><div class="field"><label>Hole Ø (mm)</label><input id="c_lD" type="number" value="25"></div>
+      <div class="field"><label>Head (m)</label><input id="c_lH" type="number" value="3"></div></div>
+      <div class="field"><label>Cd</label><input id="c_lCd" type="number" step="0.01" value="0.61"></div>
+      <button class="btn primary sm" onclick="calcLiq()">Compute</button><div id="c_lO" class="aiout" style="margin-top:10px"></div></div>
+
+    <div class="card"><h3>Gaussian plume (P-G)</h3>
+      <div class="row"><div class="field"><label>Q (kg/s)</label><input id="c_pQ" type="number" step="0.01" value="0.1"></div>
+      <div class="field"><label>u (m/s)</label><input id="c_pU" type="number" step="0.1" value="2"></div></div>
+      <div class="row"><div class="field"><label>Stability</label><select id="c_pS">${['A','B','C','D','E','F'].map(x=>`<option ${x==='F'?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label>Distance x (m)</label><input id="c_pX" type="number" value="500"></div></div>
+      <button class="btn primary sm" onclick="calcPlume()">Compute</button><div id="c_pO" class="aiout" style="margin-top:10px"></div></div>
+
+    <div class="card"><h3>Pool fire radiation</h3>
+      <div class="row"><div class="field"><label>Pool Ø (m)</label><input id="c_fD" type="number" value="10"></div>
+      <div class="field"><label>ΔHc (MJ/kg)</label><input id="c_fH" type="number" value="43.7"></div></div>
+      <div class="field"><label>Target distance from centre (m)</label><input id="c_fL" type="number" value="30"></div>
+      <button class="btn primary sm" onclick="calcPool()">Compute</button><div id="c_fO" class="aiout" style="margin-top:10px"></div></div>
+
+    <div class="card"><h3>BLEVE fireball</h3>
+      <div class="row"><div class="field"><label>Mass (kg)</label><input id="c_bM" type="number" value="50000"></div>
+      <div class="field"><label>ΔHc (MJ/kg)</label><input id="c_bH" type="number" value="46"></div></div>
+      <div class="field"><label>Distance (m)</label><input id="c_bL" type="number" value="300"></div>
+      <button class="btn primary sm" onclick="calcBleve()">Compute</button><div id="c_bO" class="aiout" style="margin-top:10px"></div></div>
+
+    <div class="card"><h3>VCE overpressure</h3>
+      <div class="row"><div class="field"><label>Cloud mass (kg)</label><input id="c_vM" type="number" value="1000"></div>
+      <div class="field"><label>ΔHc (MJ/kg)</label><input id="c_vH" type="number" value="46"></div></div>
+      <div class="row"><div class="field"><label>ME class</label><input id="c_vC" type="number" min="1" max="10" value="7"></div>
+      <div class="field"><label>Distance (m)</label><input id="c_vL" type="number" value="100"></div></div>
+      <button class="btn primary sm" onclick="calcVCE()">Compute</button><div id="c_vO" class="aiout" style="margin-top:10px"></div></div>
+
+    <div class="card"><h3>Probit → fatality</h3>
+      <div class="field"><label>Model</label><select id="c_prM">${Object.keys(QRA.PROBITS).map(k=>`<option value="${k}">${esc(QRA.PROBITS[k].label)}</option>`).join('')}</select></div>
+      <div class="row"><div class="field"><label>Conc. (ppm, toxic)</label><input id="c_prC" type="number" value="100"></div>
+      <div class="field"><label>Time (min, toxic)</label><input id="c_prT" type="number" value="30"></div></div>
+      <div class="row"><div class="field"><label>Flux (kW/m², thermal)</label><input id="c_prI" type="number" value="12.5"></div>
+      <div class="field"><label>Overpressure (kPa)</label><input id="c_prP" type="number" value="20"></div></div>
+      <button class="btn primary sm" onclick="calcProbit()">Compute</button><div id="c_prO" class="aiout" style="margin-top:10px"></div></div>
+
+    <div class="card"><h3>Field radiation converter</h3>
+      <p class="help">Estimate thermal dose &amp; injury from a measured incident flux and exposure time.</p>
+      <div class="row"><div class="field"><label>Flux (kW/m²)</label><input id="c_dI" type="number" value="5"></div>
+      <div class="field"><label>Exposure (s)</label><input id="c_dT" type="number" value="30"></div></div>
+      <button class="btn primary sm" onclick="calcDose()">Compute</button><div id="c_dO" class="aiout" style="margin-top:10px"></div></div>
+  </div>`;
+}
+function postCalc(){}
+const O=(id,txt)=>{$('#'+id).textContent=txt;};
+function calcGas(){const P=+$('#c_gP').value*1e5,T=+$('#c_gT').value+273.15,MW=+$('#c_gMW').value,g=+$('#c_gG').value,D=+$('#c_gD').value/1000,Cd=+$('#c_gCd').value;
+  const r=QRA.gasDischarge({P1:P,T1:T,MW,gamma:g,Cd,area:Math.PI*D*D/4});
+  O('c_gO',`Mass flow ṁ = ${fmt(r.mdot,4)} kg/s\nRegime: ${r.choked?'CHOKED (sonic)':'subsonic'}\nCritical pressure ratio = ${fmt(r.critPressureRatio,3)}\n(choked when Pa/P₁ ≤ ${fmt(r.critPressureRatio,3)})`);}
+function calcLiq(){const P=+$('#c_lP').value*1e5,R=+$('#c_lR').value,D=+$('#c_lD').value/1000,H=+$('#c_lH').value,Cd=+$('#c_lCd').value;
+  const r=QRA.liquidDischarge({P1:P,rho:R,Cd,area:Math.PI*D*D/4,head:H});
+  O('c_lO',`Mass flow ṁ = ${fmt(r.mdot,3)} kg/s\nExit velocity = ${fmt(r.velocity,2)} m/s\nDriving ΔP = ${fmt(r.drivingPressure/1000,1)} kPa`);}
+function calcPlume(){const Q=+$('#c_pQ').value,u=+$('#c_pU').value,S=$('#c_pS').value,x=+$('#c_pX').value;
+  const c=QRA.gaussianPlumeConc({Q,u,x,H:0,stab:S,terrain:'rural'});
+  const {sy,sz}=QRA.pgSigma(S,x,'rural');
+  O('c_pO',`Centreline ground conc = ${fmt(c,4)} kg/m³\n = ${fmt(c*1e6,1)} mg/m³\nσy = ${fmt(sy,1)} m, σz = ${fmt(sz,1)} m`);}
+function calcPool(){const D=+$('#c_fD').value,H=+$('#c_fH').value*1e6,L=+$('#c_fL').value;
+  const pf=QRA.poolFire({diameter:D,Hc:H,mb_inf:0.055,kbeta:0.7});
+  const rad=QRA.poolFireRadiation(pf,L,{RH:0.5});
+  O('c_fO',`Burn rate = ${fmt(pf.burnRate,4)} kg/m²/s\nFlame height = ${fmt(pf.flameHeight,1)} m\nSEP = ${fmt(pf.sep,0)} kW/m²\nFlux @ ${L} m = ${fmt(rad.flux,2)} kW/m²\n(view factor ${fmt(rad.viewFactor,3)}, τ ${fmt(rad.transmissivity,3)})`);}
+function calcBleve(){const M=+$('#c_bM').value,H=+$('#c_bH').value*1e6,L=+$('#c_bL').value;
+  const r=QRA.bleve({mass:M,Hc:H,radFrac:0.3,RH:0.5},L);
+  O('c_bO',`Fireball Ø = ${fmt(r.fireballDiameter,0)} m\nDuration = ${fmt(r.duration,1)} s\nCentre height = ${fmt(r.centreHeight,0)} m\nSEP = ${fmt(r.sep,0)} kW/m²\nFlux @ ${L} m = ${fmt(r.flux,1)} kW/m²`);}
+function calcVCE(){const M=+$('#c_vM').value,H=+$('#c_vH').value*1e6,C=+$('#c_vC').value,L=+$('#c_vL').value;
+  const E=M*H;const tno=QRA.tnoMultiEnergy({E,cls:C},L);const tnt=QRA.tntEquivalency({mass:M,Hc:H,eff:0.03},L);
+  O('c_vO',`— TNO Multi-Energy (class ${C}) —\nScaled distance R' = ${fmt(tno.scaledDistance,3)}\nOverpressure = ${fmt(tno.overpressure_kPa,1)} kPa\nImpulse = ${fmt(tno.impulse,1)} Pa·s\n\n— TNT equivalency (3% yield) —\nW_TNT = ${fmt(tnt.tntMass,0)} kg\nScaled dist z = ${fmt(tnt.scaledDistance,2)} m/kg^⅓\nOverpressure = ${fmt(tnt.overpressure_kPa,1)} kPa`);}
+function calcProbit(){const m=$('#c_prM').value,def=QRA.PROBITS[m];let V;
+  if(def.kind==='toxic')V=QRA.toxicLoad(+$('#c_prC').value,+$('#c_prT').value,def.n);
+  else if(def.kind==='thermal')V=QRA.thermalDose(+$('#c_prI').value,+$('#c_prT').value);
+  else V=+$('#c_prP').value*1000; // Pa for overpressure probits
+  const p=QRA.probit(m,V);
+  O('c_prO',`Causative variable V = ${fmt(V,3)}\nProbit Y = ${fmt(p.Y,2)}\nAffected fraction = ${fmt(p.fraction*100,1)} %`);}
+function calcDose(){const I=+$('#c_dI').value,t=+$('#c_dT').value;
+  const V=QRA.thermalDose(I,t);const p=QRA.probit('thermal_death',V);const p2=QRA.probit('thermal_2ndburn',V);
+  O('c_dO',`Thermal dose V = t·I^(4/3) = ${fmt(V,0)} (W/m²)^(4/3)·s\nFatality = ${fmt(p.fraction*100,1)} %\n2nd-degree burns = ${fmt(p2.fraction*100,1)} %`);}
+
+/* ---------------- CHEMICAL DB EDITOR ---------------- */
+function renderChem(){
+  const rows=Object.keys(DB.chem).map(k=>{const c=DB.chem[k];
+    return `<tr><td>${esc(c.name)}</td><td class="num">${c.MW}</td><td class="num">${fmt(c.Tb-273.15,0)}°C</td><td>${c.flammable?'<span class="tag red">F</span>':''}${c.toxic?'<span class="tag yel">T</span>':''}</td><td class="num">${c.flammable?c.LFL+'%':'—'}</td><td class="num">${c.toxic?(c.erpg3||c.idlh||'—'):'—'}</td><td><button class="btn sm ghost" onclick="editChem('${k}')">Edit</button></td></tr>`;}).join('');
+  return `<div class="banner info">Editable property database (${Object.keys(DB.chem).length} materials). Values are representative literature figures for screening — verify against a validated source for a real study.</div>
+  <div class="card pad0"><div class="scroll"><table><thead><tr><th>Material</th><th class="num">MW</th><th class="num">Tb</th><th>Flags</th><th class="num">LFL</th><th class="num">Tox endpt</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>
+  <div style="margin-top:12px"><button class="btn" onclick="addChem()">+ Add material</button> <button class="btn ghost" onclick="if(confirm('Reset chemical database to defaults?')){DB.chem=JSON.parse(JSON.stringify(CHEM_SEED));save();render();}">Reset to defaults</button></div>
+  <div id="chemEdit"></div>`;
+}
+function postChem(){}
+function editChem(k){const c=DB.chem[k];
+  const f=(lbl,key,step)=>`<div class="field"><label>${lbl}</label><input id="ce_${key}" type="number" step="${step||'any'}" value="${c[key]!=null?c[key]:''}"></div>`;
+  $('#chemEdit').innerHTML=`<div class="card" style="margin-top:14px"><h3>Edit — ${esc(c.name)}</h3>
+    <div class="field"><label>Name</label><input id="ce_name" value="${esc(c.name)}"></div>
+    <div class="grid g4">
+      ${f('MW (g/mol)','MW')}${f('Tb (K)','Tb')}${f('ΔHvap (J/kg)','Hvap')}${f('Cp liq (J/kg/K)','Cp_liq')}
+      ${f('ρ liq (kg/m³)','rho_liq')}${f('ΔHc (J/kg)','Hc')}${f('γ','gamma','0.01')}${f('LFL (%)','LFL','0.1')}
+      ${f('UFL (%)','UFL','0.1')}${f('ERPG-2 (ppm)','erpg2')}${f('ERPG-3 (ppm)','erpg3')}${f('IDLH (ppm)','idlh')}
+    </div>
+    <div class="row"><div class="field"><label>Flammable</label><select id="ce_fl"><option value="1" ${c.flammable?'selected':''}>Yes</option><option value="0" ${!c.flammable?'selected':''}>No</option></select></div>
+    <div class="field"><label>Toxic</label><select id="ce_tx"><option value="1" ${c.toxic?'selected':''}>Yes</option><option value="0" ${!c.toxic?'selected':''}>No</option></select></div>
+    <div class="field"><label>Probit model</label><select id="ce_pr"><option value="">— none —</option>${Object.keys(QRA.PROBITS).filter(p=>QRA.PROBITS[p].kind==='toxic').map(p=>`<option value="${p}" ${c.probit===p?'selected':''}>${esc(QRA.PROBITS[p].label)}</option>`).join('')}</select></div></div>
+    <div class="field"><label>Antoine A / B / C (log₁₀ mmHg, °C)</label><div class="row">
+      <input id="ce_aA" type="number" step="any" value="${c.antoine?c.antoine.A:''}" placeholder="A">
+      <input id="ce_aB" type="number" step="any" value="${c.antoine?c.antoine.B:''}" placeholder="B">
+      <input id="ce_aC" type="number" step="any" value="${c.antoine?c.antoine.C:''}" placeholder="C"></div></div>
+    <div class="field"><label>Note</label><input id="ce_note" value="${esc(c.note||'')}"></div>
+    <button class="btn primary sm" onclick="saveChem('${k}')">Save</button>
+    <button class="btn ghost sm" onclick="$('#chemEdit').innerHTML=''">Cancel</button>
+    <button class="btn danger sm" onclick="if(confirm('Delete ${esc(c.name)}?')){delete DB.chem['${k}'];save();render();}">Delete</button></div>`;
+}
+function saveChem(k){const g=id=>$('#ce_'+id).value;const n=id=>parseFloat($('#ce_'+id).value);
+  const c=DB.chem[k];c.name=g('name');['MW','Tb','Hvap','Cp_liq','rho_liq','Hc','gamma','LFL','UFL'].forEach(x=>c[x]=n(x));
+  ['erpg2','erpg3','idlh'].forEach(x=>{const v=n(x);c[x]=isNaN(v)?null:v;});
+  c.flammable=g('fl')==='1';c.toxic=g('tx')==='1';c.probit=g('pr')||null;
+  const A=n('aA'),B=n('aB'),C=n('aC');c.antoine=(!isNaN(A)&&!isNaN(B)&&!isNaN(C))?{A,B,C}:null;c.note=g('note');
+  save();render();}
+function addChem(){const key='mat_'+Date.now();DB.chem[key]={name:'New material',MW:50,Tb:300,Hvap:4e5,Cp_liq:2000,rho_liq:800,Hc:40e6,gamma:1.1,LFL:2,UFL:10,antoine:null,flammable:true,toxic:false,note:''};save();render();editChem(key);}
+</script>
+<script>
+/* ---------------- AI REVIEW LAYER (BYOK) ---------------- */
+function renderAI(){
+  const st=DB.settings;
+  return `<div class="banner info">The AI layer reviews and narrates results — it never performs the physics. All numbers come from the validated engine. Bring your own API key (stored only in this browser).</div>
+  <div class="grid g2">
+    <div class="card"><h3>Provider settings</h3>
+      <div class="field"><label>Provider</label><select id="ai_prov">
+        <option value="anthropic" ${st.aiProvider==='anthropic'?'selected':''}>Anthropic (Claude)</option>
+        <option value="openai" ${st.aiProvider==='openai'?'selected':''}>OpenAI</option></select></div>
+      <div class="field"><label>API key</label><input id="ai_key" type="password" value="${esc(st.aiKey||'')}" placeholder="sk-..."></div>
+      <div class="field"><label>Model (optional override)</label><input id="ai_model" value="${esc(st.aiModel||'')}" placeholder="${st.aiProvider==='anthropic'?'claude-sonnet-4-5':'gpt-4o'}"></div>
+      <button class="btn sm" onclick="saveAI()">Save settings</button>
+      <p class="help">Keys are stored in localStorage on this device only. Calls go browser-direct to the provider.</p>
+    </div>
+    <div class="card"><h3>Review tasks</h3>
+      <p class="help">Requires a completed scenario run.</p>
+      <div class="pill-row">
+        <button class="btn sm" onclick="aiTask('review')">Independent QRA review</button>
+        <button class="btn sm" onclick="aiTask('assumptions')">Challenge assumptions</button>
+        <button class="btn sm" onclick="aiTask('narrative')">Consequence narrative</button>
+        <button class="btn sm" onclick="aiTask('safeguards')">Safeguards &amp; recommendations</button>
+      </div>
+      <div class="field"><label>Or ask your own question about this scenario</label><textarea id="ai_q" rows="2" placeholder="e.g. Is blast strength class 6 defensible for this layout?"></textarea></div>
+      <button class="btn primary sm" onclick="aiTask('custom')">Ask</button>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>AI output</h3><div id="ai_out" class="aiout">No output yet.</div></div>`;
+}
+function postAI(){}
+function saveAI(){DB.settings.aiProvider=$('#ai_prov').value;DB.settings.aiKey=$('#ai_key').value;DB.settings.aiModel=$('#ai_model').value;save();alert('Settings saved.');}
+function scenarioContext(){
+  const o=PROJ.result;if(!o)return null;
+  const disp=(o.dispersion.targets||[]).map(t=>`${t.key}: ${t.distance?fmt(t.distance,0)+' m':'n/a'}`).join('; ');
+  const fire=(o.fire.thermal||[]).map(t=>`${t.flux} kW/m²: ${t.distance?fmt(t.distance,0)+' m':'n/a'}`).join('; ');
+  const expl=(o.explosion.tno||o.explosion.tnt||[]).map(t=>`${t.op_kpa} kPa: ${t.distance?fmt(t.distance,0)+' m':'n/a'}`).join('; ');
+  return `SCENARIO
+Material: ${o.chem.name} (MW ${o.chem.MW}, Tb ${fmt(o.chem.Tb-273.15,0)}°C, ${o.chem.flammable?'flammable ':''}${o.chem.toxic?'toxic':''})
+Release: ${o.inputs.phase}, ${o.inputs.releaseType}, ${o.inputs.holeD} mm hole, ${o.inputs.P} barg, ${o.inputs.T}°C, inventory ${o.inputs.invMass} kg
+Weather: Pasquill ${o.inputs.stab}, wind ${o.inputs.wind} m/s, ${o.inputs.terrain}, RH ${o.inputs.RH}%
+Criteria profile: ${CRITERIA[o.inputs.criteria].name}
+
+SOURCE TERM
+Discharge rate: ${fmt(o.source.mdot)} kg/s; airborne: ${fmt(o.source.airborne)} kg/s; phase: ${o.source.releasePhase}
+${o.source.flash?`Flash fraction ${fmt(o.source.flash.flashFraction*100,1)}%, airborne ${fmt(o.source.flash.airborneFraction*100,1)}%`:''}
+
+DISPERSION (${o.dispersion.dense?'dense gas, Britter-McQuaid':'neutral, Gaussian P-G'})
+${disp||'n/a'}
+
+FIRE (${o.fire.fluxFnName||'none'})
+${fire||'n/a'}
+
+EXPLOSION (${o.explosion.tno?'TNO ME class '+o.explosion.tnoClass:''}${o.explosion.tnt?' TNT':''})
+Cloud mass ${fmt(o.explosion.cloudMass,0)} kg; ${expl||'n/a'}
+
+ENGINE WARNINGS: ${o.warnings.join(' | ')||'none'}`;
+}
+const AI_PROMPTS={
+  review:'Act as an independent senior process-safety / QRA reviewer. Critically review these screening consequence results. Comment on whether the model selections (source term, dispersion regime, fire, VCE) are appropriate for this material and release, whether results look physically reasonable, and flag anything that should be checked in a validated package. Be specific and concise.',
+  assumptions:'List and challenge the key assumptions embedded in this consequence run (discharge coefficient, hole size representativeness, weather pairing, blast strength class, cloud participating fraction, probit choice). For each, state the likely direction and rough magnitude of error and what a rigorous QRA would do instead.',
+  narrative:'Write a clear consequence narrative suitable for a safety-case chapter: describe the credible event progression from loss of containment through to harm, referencing the computed distances. Professional UK/GCC oil-and-gas register style. No bullet lists.',
+  safeguards:'Based on these consequences, recommend prevention and mitigation safeguards (barriers) grouped by control, detection, and mitigation. Tie each to the specific hazard distances shown. Note which would most reduce risk.',
+  custom:''
+};
+async function aiTask(kind){
+  const out=$('#ai_out');
+  if(!PROJ.result){out.textContent='Run a scenario first (Scenario tab).';return;}
+  if(!DB.settings.aiKey){out.textContent='Add an API key in Provider settings first.';switchTab('ai');return;}
+  const ctx=scenarioContext();
+  let instr=AI_PROMPTS[kind];
+  if(kind==='custom'){instr=($('#ai_q')&&$('#ai_q').value)||'';if(!instr){out.textContent='Type a question first.';return;}}
+  const sys='You are a chartered process-safety engineer supporting a QRA. The numbers provided are from a validated screening engine (CCPS/Crowl & Louvar/TNO methods). Do NOT recompute physics; reason about method suitability, assumptions, and interpretation. Be rigorous and honest about limitations.';
+  const user=instr+'\n\n'+ctx;
+  out.innerHTML='<span class="spin"></span> Contacting '+DB.settings.aiProvider+'…';
+  try{const txt=await callAI(sys,user);out.textContent=txt;}
+  catch(e){out.textContent='AI call failed: '+e.message+'\n\n(Check API key, model name, network, and that the provider allows browser-origin calls.)';}
+}
+async function callAI(sys,user){
+  const st=DB.settings;
+  if(st.aiProvider==='anthropic'){
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':st.aiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:st.aiModel||'claude-sonnet-4-5-20250929',max_tokens:1800,system:sys,messages:[{role:'user',content:user}]})});
+    if(!r.ok)throw new Error('HTTP '+r.status+' '+(await r.text()).slice(0,200));
+    const j=await r.json();return j.content.map(b=>b.text).join('');
+  } else {
+    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+st.aiKey},body:JSON.stringify({model:st.aiModel||'gpt-4o',max_tokens:1800,messages:[{role:'system',content:sys},{role:'user',content:user}]})});
+    if(!r.ok)throw new Error('HTTP '+r.status+' '+(await r.text()).slice(0,200));
+    const j=await r.json();return j.choices[0].message.content;
+  }
+}
+
+/* ---------------- METHODS & REFERENCES ---------------- */
+function renderMethods(){
+  return `<div class="grid g2">
+  <div class="card"><h3>Method basis</h3>
+    <div class="kv" style="grid-template-columns:auto 1fr">
+      <div class="k">Gas discharge</div><div>Choked/subsonic orifice flow — Crowl &amp; Louvar Eq. 4-50/4-51</div>
+      <div class="k">Liquid discharge</div><div>Bernoulli + hydrostatic head — Crowl &amp; Louvar Eq. 4-7</div>
+      <div class="k">Flashing / aerosol</div><div>Energy-balance flash fraction + 2× aerosol rainout rule (CCPS)</div>
+      <div class="k">Pool evaporation</div><div>Boiling (ground-conduction) &amp; non-boiling (Mackay-Matsugu mass transfer)</div>
+      <div class="k">Neutral dispersion</div><div>Pasquill-Gifford Gaussian plume, Briggs σ (rural/urban)</div>
+      <div class="k">Dense-gas dispersion</div><div>Britter &amp; McQuaid workbook correlations (continuous &amp; instantaneous)</div>
+      <div class="k">Pool fire</div><div>Burgess burn rate, Thomas flame height, Mudan SEP + solid-flame view factor</div>
+      <div class="k">Jet fire</div><div>API 521 point-source with radiant fraction</div>
+      <div class="k">BLEVE</div><div>TNO fireball diameter/duration + point-source radiation</div>
+      <div class="k">VCE</div><div>TNO Multi-Energy (Alonso et al. 2006 curve fits) + TNT equivalency</div>
+      <div class="k">Atmospheric transmissivity</div><div>Water-vapour path correlation</div>
+      <div class="k">Vulnerability</div><div>Probit equations (toxic, thermal dose, overpressure)</div>
+    </div>
+    <div class="banner warn" style="margin-top:14px">This is a <b>screening / educational estimator</b>. It uses simplified correlations, not CFD or an integral consequence code. Use it for training, study scoping, and cross-checking commercial software — not as the sole basis of a safety case. Verify chemical properties and every critical result independently.</div>
+  </div>
+  <div class="card"><h3>Reference library</h3>
+    <table><tbody>
+    <tr><td><b>Guidelines for Chemical Process Quantitative Risk Analysis (CPQRA)</b><br><small>CCPS/AIChE — the QRA roadmap; failure data, fault trees, risk summation</small></td></tr>
+    <tr><td><b>Guidelines for Consequence Analysis of Chemical Releases</b><br><small>CCPS/AIChE — discharge, dispersion, fire/explosion physics</small></td></tr>
+    <tr><td><b>Chemical Process Safety: Fundamentals with Applications</b><br><small>Crowl &amp; Louvar — the core consequence maths used to build &amp; validate this engine</small></td></tr>
+    <tr><td><b>Lees' Loss Prevention in the Process Industries</b><br><small>Mannan (ed.) — failure rates, probits, reliability &amp; HEP data</small></td></tr>
+    <tr><td><b>Evaluating Process Safety in the Chemical Industry (User's Guide to QRA)</b><br><small>CCPS/ACC — scoping, boundaries, limitations</small></td></tr>
+    <tr><td><b>Guidelines for Developing Quantitative Safety Risk Criteria</b><br><small>CCPS/AIChE — tolerability, ALARP, iso-risk contours, F-N curves</small></td></tr>
+    <tr><td><b>Layer of Protection Analysis (LOPA)</b><br><small>CCPS/AIChE — order-of-magnitude bridge from HAZOP to QRA, SIL targeting</small></td></tr>
+    <tr><td><b>Methods for the Calculation of Physical Effects (TNO Yellow Book)</b><br><small>TNO — Multi-Energy blast, fireball, dense-gas source of the correlations</small></td></tr>
+    </tbody></table>
+  </div>
+  <div class="card"><h3>Roadmap to full QRA (phase 2)</h3>
+    <p>This studio delivers the <b>consequence</b> half of the QRA lifecycle. A complete QRA additionally needs, per CPQRA:</p>
+    <div class="kv"><div class="k">1.</div><div>Loss-of-containment frequencies (hole-size distributions, generic + plant-specific failure data)</div>
+    <div class="k">2.</div><div>Event trees — ignition probability, immediate vs delayed, congestion, wind rose weighting</div>
+    <div class="k">3.</div><div>Fatality summation → individual risk (LSIR/IRPA) &amp; iso-risk contours</div>
+    <div class="k">4.</div><div>Societal risk (F-N curves) against the chosen criteria</div>
+    <div class="k">5.</div><div>ALARP demonstration &amp; risk-reduction ranking</div></div>
+    <p class="help">The scenario library, chemical DB and effect distances here are the direct inputs to that layer.</p>
+  </div>
+  <div class="card"><h3>Disclaimer</h3>
+    <p class="help">Correlations are implemented from the open literature and validated against textbook worked examples, but no screening tool reproduces every regime (two-phase jets, HF association, complex terrain, obstructed jets, congestion mapping). Professional judgement and a validated package remain mandatory for any real decision. Chemical properties are indicative and must be confirmed.</p>
+  </div>
+  </div>`;
+}
+
+/* ---------------- PRINT REPORT ---------------- */
+function printReport(){
+  const o=PROJ.result;if(!o){alert('Run a scenario first.');return;}
+  const disp=(o.dispersion.targets||[]).map(t=>`<tr><td>${esc(t.label)}</td><td>${fmt(t.ppm,0)} ppm</td><td>${t.distance?fmt(t.distance,0)+' m':'—'}</td><td>${esc(t.model||'')}</td></tr>`).join('');
+  const fire=(o.fire.thermal||[]).map(t=>`<tr><td>${esc(t.label)}</td><td>${t.flux} kW/m²</td><td>${t.distance?fmt(t.distance,0)+' m':'—'}</td></tr>`).join('');
+  const expl=(o.explosion.tno||o.explosion.tnt||[]).map((t,i)=>{const tn=o.explosion.tno?o.explosion.tno[i]:null,tt=o.explosion.tnt?o.explosion.tnt[i]:null;return `<tr><td>${esc(t.label)}</td><td>${tn&&tn.distance?fmt(tn.distance,0)+' m':(tt&&tt.distance?fmt(tt.distance,0)+' m':'—')}</td></tr>`;}).join('');
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>QRA Consequence Report — ${esc(PROJ.meta.name)}</title>
+  <style>body{font-family:Georgia,serif;max-width:800px;margin:30px auto;color:#111;line-height:1.5}h1{border-bottom:3px solid #ff7a45;padding-bottom:6px}h2{color:#b35;margin-top:24px}table{width:100%;border-collapse:collapse;margin:8px 0}th,td{border:1px solid #ccc;padding:6px 9px;text-align:left;font-size:13px}th{background:#f4f4f4}.meta{color:#555;font-size:13px}.warn{background:#fff6e6;border:1px solid #e3b341;padding:10px;font-size:12px}</style></head><body>
+  <h1>QRA Consequence Assessment</h1>
+  <p class="meta"><b>${esc(PROJ.meta.name)}</b><br>Facility: ${esc(PROJ.meta.facility||'—')} · Analyst: ${esc(PROJ.meta.analyst||'—')} · Date: ${esc(PROJ.meta.date)}</p>
+  <h2>1. Scenario</h2>
+  <p>Release of <b>${esc(o.chem.name)}</b> (${esc(o.inputs.phase)}, ${esc(o.inputs.releaseType)}) through a ${o.inputs.holeD} mm opening at ${o.inputs.P} barg / ${o.inputs.T} °C, inventory ${o.inputs.invMass} kg. Atmosphere: Pasquill ${o.inputs.stab}, wind ${o.inputs.wind} m/s, ${o.inputs.terrain}, RH ${o.inputs.RH}%. Criteria: ${esc(CRITERIA[o.inputs.criteria].name)}.</p>
+  ${PROJ.meta.notes?`<p><i>${esc(PROJ.meta.notes)}</i></p>`:''}
+  <h2>2. Source term</h2>
+  <table><tr><td>Discharge rate</td><td>${fmt(o.source.mdot)} kg/s</td></tr><tr><td>Airborne rate</td><td>${fmt(o.source.airborne)} kg/s</td></tr><tr><td>Phase</td><td>${esc(o.source.releasePhase)}</td></tr>${o.source.flash?`<tr><td>Flash fraction</td><td>${fmt(o.source.flash.flashFraction*100,1)}%</td></tr>`:''}</table>
+  <h2>3. Dispersion (${o.dispersion.dense?'dense gas — Britter-McQuaid':'neutral — Gaussian P-G'})</h2>
+  <table><tr><th>Target</th><th>Conc.</th><th>Distance</th><th>Model</th></tr>${disp||'<tr><td colspan=4>n/a</td></tr>'}</table>
+  <h2>4. Fire — thermal radiation${o.fire.fluxFnName?' ('+o.fire.fluxFnName+')':''}</h2>
+  <table><tr><th>Endpoint</th><th>Flux</th><th>Distance</th></tr>${fire||'<tr><td colspan=3>n/a</td></tr>'}</table>
+  <h2>5. Explosion — overpressure</h2>
+  <table><tr><th>Endpoint</th><th>Distance</th></tr>${expl||'<tr><td colspan=2>n/a</td></tr>'}</table>
+  ${o.warnings.length?`<h2>6. Analyst warnings</h2><div class="warn">${o.warnings.map(esc).join('<br>')}</div>`:''}
+  <h2>Method &amp; limitations</h2>
+  <p style="font-size:12px;color:#555">Screening-level estimate using CCPS / Crowl &amp; Louvar / TNO correlations (Risk2Safe QRA Consequence Studio). Not a substitute for a validated consequence package or a full QRA with event frequencies. Chemical properties are indicative. Generated ${new Date().toISOString().slice(0,10)}.</p>
+  </body></html>`);
+  w.document.close();w.print();
+}
+
+/* ---------------- TOP BAR + INIT ---------------- */
+function initTopbar(){
+  $('#tabs').addEventListener('click',e=>{if(e.target.dataset.tab)switchTab(e.target.dataset.tab);});
+  $('#btnNew').onclick=()=>{if(confirm('Start a new study? Current unsaved scenario stays in this browser until overwritten.')){PROJ=defaultProject();save();switchTab('scenario');}};
+  $('#btnExport').onclick=()=>{const blob=new Blob([JSON.stringify({DB,PROJ},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(PROJ.meta.name||'qra_study').replace(/\W+/g,'_')+'.json';a.click();};
+  $('#btnImport').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=()=>{const f=i.files[0];const rd=new FileReader();rd.onload=()=>{try{const o=JSON.parse(rd.result);if(o.PROJ)PROJ=o.PROJ;if(o.DB)DB=o.DB;save();render();alert('Study imported.');}catch(e){alert('Invalid file: '+e.message);}};rd.readAsText(f);};i.click();};
+  $('#btnPrint').onclick=printReport;
+}
+loadState();
+initTopbar();
+render();
+</script>
+</body></html>
